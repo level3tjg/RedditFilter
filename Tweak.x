@@ -3,15 +3,11 @@
 #import <UIKit/UIKit.h>
 #import <dlfcn.h>
 #import <mach-o/dyld.h>
+#import <objc/runtime.h>
 #import "Preferences.h"
 
 @interface UIImage ()
 + (UIImage *)imageNamed:(NSString *)name inBundle:(NSBundle *)bundle;
-@end
-
-@interface NSURLRequest ()
-@property(readonly) NSString *graphQLOperationName;
-@property(readonly) NSString *graphQLOperationId;
 @end
 
 NSMutableArray *assetBundles;
@@ -24,35 +20,45 @@ UIImage *iconWithName(NSString *iconName) {
   return nil;
 }
 
+static NSArray *filteredObjects(NSArray *objects) {
+  return
+      [objects filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(
+                                                            id object, NSDictionary *bindings) {
+                 NSString *className = NSStringFromClass(object_getClass(object));
+                 if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) {
+                   if ([className hasSuffix:@"AdPost"]) return NO;
+                   if ([className hasSuffix:@"Post"] &&
+                       [object respondsToSelector:@selector(isAdPost)] && ((Post *)object).isAdPost)
+                     return NO;
+                 }
+                 if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended]) {
+                   if ([className containsString:@"Recommendation"]) return NO;
+                 }
+                 if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams]) {
+                   if ([className containsString:@"Stream"]) return NO;
+                 }
+                 if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW]) {
+                   if ([className hasSuffix:@"Post"] &&
+                       [object respondsToSelector:@selector(isNSFW)] && ((Post *)object).isNSFW)
+                     return NO;
+                 }
+                 return YES;
+               }]];
+}
+
 %hook Listing
 - (void)fetchNextPage:(id (^)(NSArray *, id))completion {
   id (^newCompletion)(NSArray *, id) = ^id(NSArray *objects, id arg2) {
-    objects = [objects
-        filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id object,
-                                                                          NSDictionary *bindings) {
-          NSString *className = NSStringFromClass(object_getClass(object));
-          if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) {
-            if ([className hasSuffix:@"AdPost"]) return NO;
-            if ([className hasSuffix:@"Post"] && [object respondsToSelector:@selector(isAdPost)] &&
-                ((Post *)object).isAdPost)
-              return NO;
-          }
-          if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended]) {
-            if ([className containsString:@"Recommendation"]) return NO;
-          }
-          if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams]) {
-            if ([className containsString:@"Stream"]) return NO;
-          }
-          if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW]) {
-            if ([className hasSuffix:@"Post"] && [object respondsToSelector:@selector(isNSFW)] &&
-                ((Post *)object).isNSFW)
-              return NO;
-          }
-          return YES;
-        }]];
+    objects = filteredObjects(objects);
     return completion(objects, arg2);
   };
   %orig(newCompletion);
+}
+%end
+
+%hook FeedNetworkSource
+- (NSArray *)postsAndCommentsFromData:(id)data {
+  return filteredObjects(%orig);
 }
 %end
 
