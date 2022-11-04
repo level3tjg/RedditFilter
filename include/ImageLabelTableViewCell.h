@@ -3,6 +3,6 @@
 
 @interface ImageLabelTableViewCell : ViewLabelTableViewCell
 @property(nonatomic, strong) ImageLabelContentView *imageLabelView;
-@property UIImage *displayImage;
+@property(nonatomic, strong) UIImage *displayImage;
 - (void)setCustomAccessoryImage:(UIImage *)customAccessoryImage;
 @end

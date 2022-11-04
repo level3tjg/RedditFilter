@@ -13,8 +13,8 @@ extern UIImage *iconWithName(NSString *iconName);
          cellForRowAtIndexPath:(NSIndexPath *)indexPath {
   if (indexPath.section == 2 &&
       indexPath.row == [self tableView:tableView numberOfRowsInSection:indexPath.section] - 1) {
-    UIImage *iconImage = iconWithName(@"icon_filter_20");
-    UIImage *accessoryIconImage = iconWithName(@"icon_forward_20");
+    UIImage *iconImage = iconWithName(@"icon_filter");
+    UIImage *accessoryIconImage = iconWithName(@"icon_forward");
     ImageLabelTableViewCell *cell = [self dequeueSettingsCellForTableView:tableView
                                                                 indexPath:indexPath
                                                              leadingImage:iconImage

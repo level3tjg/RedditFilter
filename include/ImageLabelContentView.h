@@ -4,4 +4,5 @@
 @interface ImageLabelContentView : BaseView
 @property(nonatomic, readonly, strong) UIImageView *imageView;
 @property(nonatomic, readonly, strong) AttributedLabelRegular *mainLabel;
+@property(nonatomic, readonly, strong) BaseLabel *detailLabel;
 @end
