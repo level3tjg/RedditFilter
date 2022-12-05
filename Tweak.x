@@ -15,9 +15,9 @@ NSMutableArray *assetBundles;
 
 UIImage *iconWithName(NSString *iconName) {
   NSArray *commonIconSizes = @[
-    @"16",
-    @"20",
     @"24",
+    @"20",
+    @"16",
   ];
   UIImage *iconImage;
   for (NSBundle *bundle in assetBundles) {
