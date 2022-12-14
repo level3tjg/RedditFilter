@@ -1,6 +1,7 @@
 #import "FilterSettingsViewController.h"
 
 extern UIImage *iconWithName(NSString *iconName);
+extern Class CoreClass(NSString *name);
 
 %subclass FilterSettingsViewController : BaseTableViewController
 %new
@@ -35,7 +36,7 @@ extern UIImage *iconWithName(NSString *iconName);
       cell.accessorySwitch.on =
           ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended];
       [cell.accessorySwitch addTarget:self
-                               action:@selector(didToggleRecommendeddSwitch:)
+                               action:@selector(didToggleRecommendedSwitch:)
                      forControlEvents:UIControlEventValueChanged];
       break;
     case 2:
@@ -144,17 +145,15 @@ extern UIImage *iconWithName(NSString *iconName);
 - (void)viewDidLoad {
   %orig;
   self.title = @"Feed filter";
-  Class toggleCellClass = objc_getClass("ToggleImageTableViewCell");
-  if (!toggleCellClass) toggleCellClass = objc_getClass("Reddit.ToggleImageTableViewCell");
-  if (!toggleCellClass) toggleCellClass = objc_getClass("RedditUI.ToggleImageTableViewCell");
-  [self.tableView registerClass:toggleCellClass forCellReuseIdentifier:kToggleCellID];
+  [self.tableView registerClass:CoreClass(@"ToggleImageTableViewCell")
+         forCellReuseIdentifier:kToggleCellID];
 }
 %new
 - (void)didTogglePromotedSwitch:(UISwitch *)sender {
   [NSUserDefaults.standardUserDefaults setBool:!sender.on forKey:kRedditFilterPromoted];
 }
 %new
-- (void)didToggleRecommendeddSwitch:(UISwitch *)sender {
+- (void)didToggleRecommendedSwitch:(UISwitch *)sender {
   [NSUserDefaults.standardUserDefaults setBool:!sender.on forKey:kRedditFilterRecommended];
 }
 %new

@@ -5,6 +5,7 @@
 #import <dlfcn.h>
 #import <mach-o/dyld.h>
 #import <objc/runtime.h>
+#import <substrate.h>
 #import "Preferences.h"
 
 @interface UIImage ()
@@ -13,7 +14,7 @@
 
 NSMutableArray *assetBundles;
 
-UIImage *iconWithName(NSString *iconName) {
+extern "C" UIImage *iconWithName(NSString *iconName) {
   NSArray *commonIconSizes = @[
     @"24",
     @"20",
@@ -28,6 +29,22 @@ UIImage *iconWithName(NSString *iconName) {
     }
   }
   return iconImage;
+}
+
+extern "C" Class CoreClass(NSString *name) {
+  Class cls = NSClassFromString(name);
+  NSArray *prefixes = @[
+    @"Reddit.",
+    @"RedditCore.",
+    @"RedditCoreModels.",
+    @"RedditCore_RedditCoreModels.",
+    @"RedditUI.",
+  ];
+  for (NSString *prefix in prefixes) {
+    if (cls) break;
+    cls = NSClassFromString([prefix stringByAppendingString:name]);
+  }
+  return cls;
 }
 
 static NSArray *filteredObjects(NSArray *objects) {
@@ -153,20 +170,29 @@ static NSArray *filteredObjects(NSArray *objects) {
 }
 %end
 
-static Class CoreClass(NSString *name) {
-  Class cls = NSClassFromString(name);
-  NSArray *prefixes = @[
-    @"Reddit.",
-    @"RedditCore.",
-    @"RedditCoreModels.",
-    @"RedditCore_RedditCoreModels.",
-  ];
-  for (NSString *prefix in prefixes) {
-    if (cls) break;
-    cls = NSClassFromString([prefix stringByAppendingString:name]);
+%hook ToggleImageTableViewCell
+- (void)updateConstraints {
+  %orig;
+  if (class_getInstanceVariable(object_getClass(self), "horizontalStackView")) {
+    UIView *contentView = [self contentView];
+    UIStackView *horizontalStackView = MSHookIvar<UIStackView *>(self, "horizontalStackView");
+    [contentView addConstraint:[NSLayoutConstraint constraintWithItem:horizontalStackView
+                                                            attribute:NSLayoutAttributeHeight
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:contentView
+                                                            attribute:NSLayoutAttributeHeight
+                                                           multiplier:1
+                                                             constant:0]];
+    [contentView addConstraint:[NSLayoutConstraint constraintWithItem:horizontalStackView
+                                                            attribute:NSLayoutAttributeCenterY
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:contentView
+                                                            attribute:NSLayoutAttributeCenterY
+                                                           multiplier:1
+                                                             constant:0]];
   }
-  return cls;
 }
+%end
 
 static BOOL initialized = NO;
 
@@ -174,7 +200,8 @@ static void add_image(const struct mach_header *mh, intptr_t vmaddr_slide) {
   if (!initialized && %c(Listing)) {
     %init(Comment = CoreClass(@"Comment"), Post = CoreClass(@"Post"),
                      QuickActionViewModel = CoreClass(@"QuickActionViewModel"),
-                     StreamManager = CoreClass(@"StreamManager"));
+                     StreamManager = CoreClass(@"StreamManager"),
+                     ToggleImageTableViewCell = CoreClass(@"ToggleImageTableViewCell"));
     initialized = YES;
   }
 }
