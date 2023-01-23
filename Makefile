@@ -7,7 +7,7 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = RedditFilter
 
-$(TWEAK_NAME)_FILES = Tweak.xm FilterSettingsViewController.x Settings.x
+$(TWEAK_NAME)_FILES = $(wildcard *.x*)
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc -Iinclude
 
 include $(THEOS_MAKE_PATH)/tweak.mk

@@ -15,5 +15,5 @@
 - (UIImage *)imageScaledToSize:(CGSize)size;
 @end
 
-@interface FilterSettingsViewController : BaseTableViewController
+@interface FeedFilterSettingsViewController : BaseTableViewController
 @end

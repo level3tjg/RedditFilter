@@ -1,6 +1,6 @@
 Package: com.level3tjg.redditfilter
 Name: RedditFilter
-Version: 1.1
+Version: 1.1.1
 Architecture: iphoneos-arm
 Description: Filter out unwanted content from your Reddit feed
 Depiction: https://level3tjg.me/repo/depictions/?p=com.level3tjg.redditfilter

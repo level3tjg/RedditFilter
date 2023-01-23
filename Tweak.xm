@@ -1,6 +1,7 @@
 #import <Carousel.h>
 #import <Comment.h>
 #import <Post.h>
+#import <ToggleImageTableViewCell.h>
 #import <UIKit/UIKit.h>
 #import <dlfcn.h>
 #import <mach-o/dyld.h>
@@ -12,7 +13,7 @@
 + (UIImage *)imageNamed:(NSString *)name inBundle:(NSBundle *)bundle;
 @end
 
-NSMutableArray *assetBundles;
+static NSMutableArray *assetBundles;
 
 extern "C" UIImage *iconWithName(NSString *iconName) {
   NSArray *commonIconSizes = @[
@@ -29,6 +30,14 @@ extern "C" UIImage *iconWithName(NSString *iconName) {
     }
   }
   return iconImage;
+}
+
+extern "C" NSString *localizedString(NSString *key, NSString *table) {
+  for (NSBundle *bundle in assetBundles) {
+    NSString *localizedString = [bundle localizedStringForKey:key value:nil table:table];
+    if (![localizedString isEqualToString:key]) return localizedString;
+  }
+  return nil;
 }
 
 extern "C" Class CoreClass(NSString *name) {
@@ -143,6 +152,10 @@ static NSArray *filteredObjects(NSArray *objects) {
   return [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards] ? NO
                                                                               : %orig;
 }
+- (BOOL)isScoreHidden {
+  return [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores] ? YES
+                                                                              : %orig;
+}
 %end
 
 %hook Comment
@@ -162,6 +175,10 @@ static NSArray *filteredObjects(NSArray *objects) {
   return [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards] ? NO
                                                                               : %orig;
 }
+- (BOOL)isScoreHidden {
+  return [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores] ? YES
+                                                                              : %orig;
+}
 - (BOOL)shouldAutoCollapse {
   return [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAutoCollapseAutoMod] &&
                  [((Comment *)self).authorPk isEqualToString:@"t2_6l4z3"]
@@ -173,9 +190,24 @@ static NSArray *filteredObjects(NSArray *objects) {
 %hook ToggleImageTableViewCell
 - (void)updateConstraints {
   %orig;
-  if (class_getInstanceVariable(object_getClass(self), "horizontalStackView")) {
+  UIStackView *horizontalStackView =
+      [self respondsToSelector:@selector(imageLabelView)]
+          ? [self imageLabelView].horizontalStackView
+          : object_getIvar(self,
+                           class_getInstanceVariable(object_getClass(self), "horizontalStackView"));
+  UILabel *detailLabel = [self respondsToSelector:@selector(imageLabelView)]
+                             ? [self imageLabelView].detailLabel
+                             : [self detailLabel];
+  if (!horizontalStackView || !detailLabel) return;
+  if (detailLabel.text) {
     UIView *contentView = [self contentView];
-    UIStackView *horizontalStackView = MSHookIvar<UIStackView *>(self, "horizontalStackView");
+    [contentView addConstraint:[NSLayoutConstraint constraintWithItem:detailLabel
+                                                            attribute:NSLayoutAttributeHeight
+                                                            relatedBy:NSLayoutRelationEqual
+                                                               toItem:horizontalStackView
+                                                            attribute:NSLayoutAttributeHeight
+                                                           multiplier:.33
+                                                             constant:0]];
     [contentView addConstraint:[NSLayoutConstraint constraintWithItem:horizontalStackView
                                                             attribute:NSLayoutAttributeHeight
                                                             relatedBy:NSLayoutRelationEqual

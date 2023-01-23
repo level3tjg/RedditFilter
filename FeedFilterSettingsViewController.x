@@ -1,15 +1,15 @@
-#import "FilterSettingsViewController.h"
+#import "FeedFilterSettingsViewController.h"
 
 extern UIImage *iconWithName(NSString *iconName);
 extern Class CoreClass(NSString *name);
 
-%subclass FilterSettingsViewController : BaseTableViewController
+%subclass FeedFilterSettingsViewController : BaseTableViewController
 %new
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
   return 1;
 }
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-  return 6;
+  return 7;
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView
          cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -67,6 +67,16 @@ extern Class CoreClass(NSString *name);
                      forControlEvents:UIControlEventValueChanged];
       break;
     case 5:
+      mainLabelText = @"Scores";
+      detailLabelText = @"Show vote count on posts and comments";
+      iconNames = @[ @"icon_upvote" ];
+      cell.accessorySwitch.on =
+          ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores];
+      [cell.accessorySwitch addTarget:self
+                               action:@selector(didToggleScoresSwitch:)
+                     forControlEvents:UIControlEventValueChanged];
+      break;
+    case 6:
       mainLabelText = @"AutoMod";
       detailLabelText = @"Auto collapse AutoMod comments";
       iconNames = @[ @"icon_mod" ];
@@ -92,7 +102,7 @@ extern Class CoreClass(NSString *name);
   }
 
   if (iconImage) {
-    UIImage *displayImage = [[iconImage imageScaledToSize:CGSizeMake(16, 16)]
+    UIImage *displayImage = [[iconImage imageScaledToSize:CGSizeMake(20, 20)]
         imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     if ([cell respondsToSelector:@selector(setDisplayImage:)])
       cell.displayImage = displayImage;
@@ -167,6 +177,10 @@ extern Class CoreClass(NSString *name);
 %new
 - (void)didToggleAwardsSwitch:(UISwitch *)sender {
   [NSUserDefaults.standardUserDefaults setBool:!sender.on forKey:kRedditFilterAwards];
+}
+%new
+- (void)didToggleScoresSwitch:(UISwitch *)sender {
+  [NSUserDefaults.standardUserDefaults setBool:!sender.on forKey:kRedditFilterScores];
 }
 %new
 - (void)didToggleAutoCollapseAutoModSwitch:(UISwitch *)sender {
