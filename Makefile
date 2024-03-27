@@ -3,11 +3,22 @@ INSTALL_TARGET_PROCESSES = RedditApp Reddit
 
 ARCHS = arm64
 
+ifeq ($(SIDELOADED),1)
+MODULES = jailed
+CODESIGN_IPA = 0
+endif
+
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = RedditFilter
 
 $(TWEAK_NAME)_FILES = $(wildcard *.x*) fishhook/fishhook.c
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc -Iinclude -Wno-module-import-in-extern-c
+$(TWEAK_NAME)_INJECT_DYLIBS = $(THEOS_OBJ_DIR)/RedditSideloadFix.dylib
 
 include $(THEOS_MAKE_PATH)/tweak.mk
+
+ifeq ($(SIDELOADED),1)
+SUBPROJECTS += RedditSideloadFix
+include $(THEOS_MAKE_PATH)/aggregate.mk
+endif
