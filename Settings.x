@@ -1,6 +1,8 @@
 #import <AppSettingsViewController.h>
 #import "FeedFilterSettingsViewController.h"
 
+NSBundle *redditFilterBundle;
+
 extern UIImage *iconWithName(NSString *iconName);
 extern NSString *localizedString(NSString *key, NSString *table);
 
@@ -38,10 +40,13 @@ extern NSString *localizedString(NSString *key, NSString *table);
     UIImage *iconImage = [iconWithName(@"icon_filter") imageScaledToSize:CGSizeMake(20, 20)];
     UIImage *accessoryIconImage =
         [iconWithName(@"icon_forward") imageScaledToSize:CGSizeMake(20, 20)];
-    ImageLabelTableViewCell *cell = [self dequeueSettingsCellForTableView:tableView
-                                                                indexPath:indexPath
-                                                             leadingImage:iconImage
-                                                                     text:@"Feed filter"];
+    ImageLabelTableViewCell *cell = [self
+        dequeueSettingsCellForTableView:tableView
+                              indexPath:indexPath
+                           leadingImage:iconImage
+                                   text:[redditFilterBundle localizedStringForKey:@"filter.settings.title"
+                                                                            value:@"Feed filter"
+                                                                            table:nil]];
     [cell setCustomAccessoryImage:accessoryIconImage];
     return cell;
   }
@@ -60,3 +65,11 @@ extern NSString *localizedString(NSString *key, NSString *table);
   %orig;
 }
 %end
+
+%ctor {
+  redditFilterBundle = [NSBundle bundleWithPath:[NSBundle.mainBundle pathForResource:@"RedditFilter"
+                                                                              ofType:@"bundle"]];
+  if (!redditFilterBundle)
+    redditFilterBundle = [NSBundle bundleWithPath:@THEOS_PACKAGE_INSTALL_PREFIX
+                                   @"/Library/Application Support/RedditFilter.bundle"];
+}

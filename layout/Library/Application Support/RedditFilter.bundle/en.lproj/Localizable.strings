@@ -1,0 +1,13 @@
+"filter.settings.title"="Feed filter";
+"filter.settings.header"="Filters";
+"filter.settings.footer"="Filter specific types of posts from your feed.";
+"filter.settings.promoted.title"="Promoted";
+"filter.settings.recommended.title"="Recommended";
+"filter.settings.livestreams.title"="Livestreams";
+"filter.settings.nsfw.title"="NSFW";
+"filter.settings.awards.title"="Awards";
+"filter.settings.awards.subtitle"="Show awards on posts and comments";
+"filter.settings.scores.title"="Scores";
+"filter.settings.scores.subtitle"="Show vote count on posts and comments";
+"filter.settings.automod.title"="AutoMod";
+"filter.settings.automod.subtitle"="Auto collapse AutoMod comments";

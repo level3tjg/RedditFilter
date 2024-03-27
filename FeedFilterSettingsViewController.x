@@ -1,5 +1,6 @@
 #import "FeedFilterSettingsViewController.h"
 
+extern NSBundle *redditFilterBundle;
 extern UIImage *iconWithName(NSString *iconName);
 extern Class CoreClass(NSString *name);
 
@@ -22,7 +23,9 @@ extern Class CoreClass(NSString *name);
 
   switch (indexPath.row) {
     case 0:
-      mainLabelText = @"Promoted";
+      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.promoted.title"
+                                                          value:@"Promoted"
+                                                          table:nil];
       iconNames = @[ @"icon_tag" ];
       cell.accessorySwitch.on =
           ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted];
@@ -31,7 +34,9 @@ extern Class CoreClass(NSString *name);
                      forControlEvents:UIControlEventValueChanged];
       break;
     case 1:
-      mainLabelText = @"Recommended";
+      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.recommended.title"
+                                                          value:@"Recommended"
+                                                          table:nil];
       iconNames = @[ @"icon_spam" ];
       cell.accessorySwitch.on =
           ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended];
@@ -40,7 +45,9 @@ extern Class CoreClass(NSString *name);
                      forControlEvents:UIControlEventValueChanged];
       break;
     case 2:
-      mainLabelText = @"Livestreams";
+      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.livestreams.title"
+                                                          value:@"Livestreams"
+                                                          table:nil];
       iconNames = @[ @"icon_videocamera", @"icon_video_camera" ];
       cell.accessorySwitch.on =
           ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams];
@@ -49,7 +56,9 @@ extern Class CoreClass(NSString *name);
                      forControlEvents:UIControlEventValueChanged];
       break;
     case 3:
-      mainLabelText = @"NSFW";
+      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.nsfw.title"
+                                                          value:@"NSFW"
+                                                          table:nil];
       iconNames = @[ @"icon_nsfw" ];
       cell.accessorySwitch.on = ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW];
       [cell.accessorySwitch addTarget:self
@@ -57,8 +66,13 @@ extern Class CoreClass(NSString *name);
                      forControlEvents:UIControlEventValueChanged];
       break;
     case 4:
-      mainLabelText = @"Awards";
-      detailLabelText = @"Show awards on posts and comments";
+      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.awards.title"
+                                                          value:@"Awards"
+                                                          table:nil];
+      detailLabelText =
+          [redditFilterBundle localizedStringForKey:@"filter.settings.awards.subtitle"
+                                              value:@"Show awards on posts and comments"
+                                              table:nil];
       iconNames = @[ @"icon_gift_fill", @"icon_award" ];
       cell.accessorySwitch.on =
           ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards];
@@ -67,8 +81,13 @@ extern Class CoreClass(NSString *name);
                      forControlEvents:UIControlEventValueChanged];
       break;
     case 5:
-      mainLabelText = @"Scores";
-      detailLabelText = @"Show vote count on posts and comments";
+      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.scores.title"
+                                                          value:@"Scores"
+                                                          table:nil];
+      detailLabelText =
+          [redditFilterBundle localizedStringForKey:@"filter.settings.scores.subtitle"
+                                              value:@"Show vote count on posts and comments"
+                                              table:nil];
       iconNames = @[ @"icon_upvote" ];
       cell.accessorySwitch.on =
           ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores];
@@ -77,8 +96,13 @@ extern Class CoreClass(NSString *name);
                      forControlEvents:UIControlEventValueChanged];
       break;
     case 6:
-      mainLabelText = @"AutoMod";
-      detailLabelText = @"Auto collapse AutoMod comments";
+      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.automod.title"
+                                                          value:@"AutoMod"
+                                                          table:nil];
+      detailLabelText =
+          [redditFilterBundle localizedStringForKey:@"filter.settings.automod.subtitle"
+                                              value:@"Auto collapse AutoMod comments"
+                                              table:nil];
       iconNames = @[ @"icon_mod" ];
       cell.accessorySwitch.on =
           [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAutoCollapseAutoMod];
@@ -125,7 +149,9 @@ extern Class CoreClass(NSString *name);
   [headerView.contentView addSubview:label];
   [headerView associatePropertySetter:@selector(setBackgroundColor:)
               withThemePropertyGetter:@selector(canvasColor)];
-  label.text = [@"Filters" uppercaseString];
+  label.text = [[redditFilterBundle localizedStringForKey:@"filter.settings.header"
+                                                    value:@"Filters"
+                                                    table:nil] uppercaseString];
   return headerView;
 }
 %new
@@ -145,7 +171,10 @@ extern Class CoreClass(NSString *name);
   [footerView.contentView addSubview:label];
   [footerView associatePropertySetter:@selector(setBackgroundColor:)
               withThemePropertyGetter:@selector(canvasColor)];
-  label.text = @"Filter specific types of posts from your feed.";
+  label.text =
+      [redditFilterBundle localizedStringForKey:@"filter.settings.footer"
+                                          value:@"Filter specific types of posts from your feed."
+                                          table:nil];
   return footerView;
 }
 %new
@@ -154,7 +183,9 @@ extern Class CoreClass(NSString *name);
 }
 - (void)viewDidLoad {
   %orig;
-  self.title = @"Feed filter";
+  self.title = [redditFilterBundle localizedStringForKey:@"filter.settings.title"
+                                                   value:@"Feed filter"
+                                                   table:nil];
   [self.tableView registerClass:CoreClass(@"ToggleImageTableViewCell")
          forCellReuseIdentifier:kToggleCellID];
 }

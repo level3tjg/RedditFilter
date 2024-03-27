@@ -142,6 +142,10 @@ static NSArray *filteredObjects(NSArray *objects) {
 %end
 
 %hook Post
++ (instancetype)alloc {
+  NSLog(@"post alloc");
+  return %orig;
+}
 - (NSArray *)awardingTotals {
   return [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards] ? nil
                                                                               : %orig;
