@@ -6,8 +6,8 @@
 #import <dlfcn.h>
 #import <mach-o/dyld.h>
 #import <objc/runtime.h>
-#import <substrate.h>
 #import "Preferences.h"
+#import "fishhook/fishhook.h"
 
 @interface UIImage ()
 + (UIImage *)imageNamed:(NSString *)name inBundle:(NSBundle *)bundle;
@@ -57,29 +57,31 @@ extern "C" Class CoreClass(NSString *name) {
 }
 
 static NSArray *filteredObjects(NSArray *objects) {
-  return
-      [objects filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(
-                                                            id object, NSDictionary *bindings) {
-                 NSString *className = NSStringFromClass(object_getClass(object));
-                 if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) {
-                   if ([className hasSuffix:@"AdPost"]) return NO;
-                   if ([className hasSuffix:@"Post"] &&
-                       [object respondsToSelector:@selector(isAdPost)] && ((Post *)object).isAdPost)
-                     return NO;
-                 }
-                 if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended]) {
-                   if ([className containsString:@"Recommendation"]) return NO;
-                 }
-                 if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams]) {
-                   if ([className containsString:@"Stream"]) return NO;
-                 }
-                 if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW]) {
-                   if ([className hasSuffix:@"Post"] &&
-                       [object respondsToSelector:@selector(isNSFW)] && ((Post *)object).isNSFW)
-                     return NO;
-                 }
-                 return YES;
-               }]];
+  return [objects
+      filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id object,
+                                                                        NSDictionary *bindings) {
+        NSString *className = NSStringFromClass(object_getClass(object));
+        BOOL isAdPost =
+            [className hasSuffix:@"AdPost"] ||
+            ([object respondsToSelector:@selector(isAdPost)] && ((Post *)object).isAdPost) ||
+            ([object respondsToSelector:@selector(isPromotedUserPostAd)] &&
+             [(Post *)object isPromotedUserPostAd]) ||
+            ([object respondsToSelector:@selector(isPromotedCommunityPostAd)] &&
+             [(Post *)object isPromotedCommunityPostAd]);
+        BOOL isRecommendation = [className containsString:@"Recommend"];
+        BOOL isLivestream = [className containsString:@"Stream"];
+        BOOL isNSFW = [object respondsToSelector:@selector(isNSFW)] && ((Post *)object).isNSFW;
+        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted] && isAdPost)
+          return NO;
+        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended] &&
+            isRecommendation)
+          return NO;
+        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams] &&
+            isLivestream)
+          return NO;
+        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW] && isNSFW) return NO;
+        return YES;
+      }]];
 }
 
 %hook Listing
@@ -238,6 +240,11 @@ static void add_image(const struct mach_header *mh, intptr_t vmaddr_slide) {
   }
 }
 
+static bool (*orig__availability_version_check)(int, int, uint, uint);
+static bool hook__availability_version_check(int Platform, int Major, uint Minor, uint Subminor) {
+  return Major >= 15 ? NO : orig__availability_version_check(Platform, Major, Minor, Subminor);
+}
+
 %ctor {
   assetBundles = [NSMutableArray new];
   [assetBundles addObject:NSBundle.mainBundle];
@@ -261,5 +268,9 @@ static void add_image(const struct mach_header *mh, intptr_t vmaddr_slide) {
                                                 inDirectory:@"Frameworks"]];
     if (bundle) [assetBundles addObject:bundle];
   }
+  rebind_symbols(
+      (struct rebinding[]){{"_availability_version_check", (void *)hook__availability_version_check,
+                            (void **)&orig__availability_version_check}},
+      1);
   _dyld_register_func_for_add_image(add_image);
 }
