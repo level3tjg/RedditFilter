@@ -56,41 +56,40 @@ extern "C" Class CoreClass(NSString *name) {
   return cls;
 }
 
+static BOOL shouldFilterObject(id object) {
+  NSString *className = NSStringFromClass(object_getClass(object));
+  BOOL isAdPost = [className hasSuffix:@"AdPost"] ||
+                  ([object respondsToSelector:@selector(isAdPost)] && ((Post *)object).isAdPost) ||
+                  ([object respondsToSelector:@selector(isPromotedUserPostAd)] &&
+                   [(Post *)object isPromotedUserPostAd]) ||
+                  ([object respondsToSelector:@selector(isPromotedCommunityPostAd)] &&
+                   [(Post *)object isPromotedCommunityPostAd]);
+  BOOL isRecommendation = [className containsString:@"Recommend"];
+  BOOL isLivestream = [className containsString:@"Stream"];
+  BOOL isNSFW = [object respondsToSelector:@selector(isNSFW)] && ((Post *)object).isNSFW;
+  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted] && isAdPost)
+    return YES;
+  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended] && isRecommendation)
+    return YES;
+  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams] && isLivestream)
+    return YES;
+  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW] && isNSFW) return YES;
+  return NO;
+}
+
 static NSArray *filteredObjects(NSArray *objects) {
-  return [objects
-      filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(id object,
-                                                                        NSDictionary *bindings) {
-        NSString *className = NSStringFromClass(object_getClass(object));
-        BOOL isAdPost =
-            [className hasSuffix:@"AdPost"] ||
-            ([object respondsToSelector:@selector(isAdPost)] && ((Post *)object).isAdPost) ||
-            ([object respondsToSelector:@selector(isPromotedUserPostAd)] &&
-             [(Post *)object isPromotedUserPostAd]) ||
-            ([object respondsToSelector:@selector(isPromotedCommunityPostAd)] &&
-             [(Post *)object isPromotedCommunityPostAd]);
-        BOOL isRecommendation = [className containsString:@"Recommend"];
-        BOOL isLivestream = [className containsString:@"Stream"];
-        BOOL isNSFW = [object respondsToSelector:@selector(isNSFW)] && ((Post *)object).isNSFW;
-        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted] && isAdPost)
-          return NO;
-        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended] &&
-            isRecommendation)
-          return NO;
-        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams] &&
-            isLivestream)
-          return NO;
-        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW] && isNSFW) return NO;
-        return YES;
-      }]];
+  return [objects filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(
+                                                               id object, NSDictionary *bindings) {
+                    return !shouldFilterObject(object);
+                  }]];
 }
 
 %hook Listing
-- (void)fetchNextPage:(id (^)(NSArray *, id))completion {
-  id (^newCompletion)(NSArray *, id) = ^id(NSArray *objects, id arg2) {
-    objects = filteredObjects(objects);
-    return completion(objects, arg2);
+- (void)fetchNextPage:(id (^)(NSArray *, id))completionHandler {
+  id (^newCompletionHandler)(NSArray *, id) = ^(NSArray *objects, id _) {
+    return completionHandler(filteredObjects(objects), _);
   };
-  %orig(newCompletion);
+  return %orig(newCompletionHandler);
 }
 %end
 
@@ -102,6 +101,10 @@ static NSArray *filteredObjects(NSArray *objects) {
 
 %hook PostDetailPresenter
 - (BOOL)shouldFetchCommentAdPost {
+  return [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted] ? NO
+                                                                                : %orig;
+}
+- (BOOL)shouldFetchAdditionalCommentAdPosts {
   return [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted] ? NO
                                                                                 : %orig;
 }
@@ -142,10 +145,6 @@ static NSArray *filteredObjects(NSArray *objects) {
 %end
 
 %hook Post
-+ (instancetype)alloc {
-  NSLog(@"post alloc");
-  return %orig;
-}
 - (NSArray *)awardingTotals {
   return [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards] ? nil
                                                                               : %orig;
