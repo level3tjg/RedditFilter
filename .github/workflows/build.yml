@@ -8,6 +8,10 @@ on:
         description: "Create draft release"
         default: false
         type: boolean
+      ipa_url:
+        description: "Direct URL to Reddit IPA file"
+        type: string
+        required: false
 
 jobs:
   build:
@@ -39,8 +43,8 @@ jobs:
           sudo make install
           sudo ldconfig
 
-      - name: Download IPA
-        if: ${{ inputs.create_release }}
+      - name: Download IPA (Auto)
+        if: ${{ inputs.create_release && !inputs.ipa_url }}
         id: download_ipa
         uses: level3tjg/decryptedappstore-action@main
         with:
@@ -48,6 +52,15 @@ jobs:
           cache: true
           path: ${{ github.workspace }}/App.ipa
           token: ${{ secrets.DECRYPTEDAPPSTORE_SESSION_TOKEN }}
+
+      - name: Download IPA (Manual)
+        if: ${{ inputs.create_release && inputs.ipa_url }}
+        id: download_ipa
+        run: |
+          curl -Lo "${{ github.workspace }}/App.ipa" ${{ inputs.ipa_url }}
+          info=$(unzip -p "${{ github.workspace }}/App.ipa" Payload/*.app/Info.plist)
+          echo "bundle-id=$(xmlstarlet sel -t -v "/plist/dict/key[text()=\"CFBundleIdentifier\"]/following-sibling::*[1]/text()" >> $GITHUB_OUTPUT
+          echo "version=$(xmlstarlet sel -t -v "/plist/dict/key[text()=\"CFBundleShortVersionString\"]/following-sibling::*[1]/text()")" >> $GITHUB_OUTPUT
 
       - name: Setup theos
         uses: level3tjg/theos-action@main
