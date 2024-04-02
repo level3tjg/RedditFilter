@@ -45,7 +45,6 @@ jobs:
 
       - name: Download IPA (Auto)
         if: ${{ inputs.create_release && !inputs.ipa_url }}
-        id: download_ipa
         uses: level3tjg/decryptedappstore-action@main
         with:
           appstore_url: "https://apps.apple.com/us/app/reddit/id1064216828"
@@ -55,9 +54,12 @@ jobs:
 
       - name: Download IPA (Manual)
         if: ${{ inputs.create_release && inputs.ipa_url }}
-        id: download_ipa
+        run: curl -Lo "${{ github.workspace }}/App.ipa" ${{ inputs.ipa_url }}
+
+      - name: Get IPA Info
+        if: ${{ inputs.create_release }}
+        id: ipa_info
         run: |
-          curl -Lo "${{ github.workspace }}/App.ipa" ${{ inputs.ipa_url }}
           info=$(unzip -p "${{ github.workspace }}/App.ipa" Payload/*.app/Info.plist)
           echo "bundle-id=$(xmlstarlet sel -t -v "/plist/dict/key[text()=\"CFBundleIdentifier\"]/following-sibling::*[1]/text()" >> $GITHUB_OUTPUT
           echo "version=$(xmlstarlet sel -t -v "/plist/dict/key[text()=\"CFBundleShortVersionString\"]/following-sibling::*[1]/text()")" >> $GITHUB_OUTPUT
@@ -102,7 +104,7 @@ jobs:
           FINALPACKAGE: 1
           SIDELOADED: 1
           IPA: ${{ github.workspace }}/App.ipa
-          APP_VERSION: ${{ steps.download_ipa.outputs.version }}
+          APP_VERSION: ${{ steps.ipa_info.outputs.version }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -116,4 +118,4 @@ jobs:
         with:
           draft: true
           files: packages/*
-          tag_name: v${{ steps.download_ipa.outputs.version }}-${{ steps.package_info.outputs.version }}
+          tag_name: v${{ steps.ipa_info.outputs.version }}-${{ steps.package_info.outputs.version }}
