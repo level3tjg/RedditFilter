@@ -54,7 +54,7 @@ jobs:
 
       - name: Download IPA (Manual)
         if: ${{ inputs.create_release && inputs.ipa_url }}
-        run: curl -Lo "${{ github.workspace }}/App.ipa" ${{ inputs.ipa_url }}
+        run: curl -Lo "${{ github.workspace }}/App.ipa" "${{ inputs.ipa_url }}"
 
       - name: Get IPA Info
         if: ${{ inputs.create_release }}
