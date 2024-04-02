@@ -61,8 +61,8 @@ jobs:
         id: ipa_info
         run: |
           info=$(unzip -p "${{ github.workspace }}/App.ipa" Payload/*.app/Info.plist)
-          echo "bundle-id=$(xmlstarlet sel -t -v "/plist/dict/key[text()=\"CFBundleIdentifier\"]/following-sibling::*[1]/text()")" >> $GITHUB_OUTPUT
-          echo "version=$(xmlstarlet sel -t -v "/plist/dict/key[text()=\"CFBundleShortVersionString\"]/following-sibling::*[1]/text()")" >> $GITHUB_OUTPUT
+          echo "bundle-id=$(cat $info | xmlstarlet sel -t -v "/plist/dict/key[text()=\"CFBundleIdentifier\"]/following-sibling::*[1]/text()")" >> $GITHUB_OUTPUT
+          echo "version=$(cat $info | xmlstarlet sel -t -v "/plist/dict/key[text()=\"CFBundleShortVersionString\"]/following-sibling::*[1]/text()")" >> $GITHUB_OUTPUT
 
       - name: Setup theos
         uses: level3tjg/theos-action@main
