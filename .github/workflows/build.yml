@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       create_release:
-        description: "Create draft release"
+        description: "Build IPA and create draft release"
         default: false
         type: boolean
       ipa_url:
