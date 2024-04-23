@@ -87,17 +87,28 @@ static NSArray *filteredObjects(NSArray *objects) {
 %hook NSJSONSerialization
 + (id)JSONObjectWithData:(NSData *)data options:(NSJSONReadingOptions)opt error:(NSError * _Nullable *)error {
   id result = %orig;
-  if (![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) return result;
   if ([result isKindOfClass:NSMutableDictionary.class]) {
     NSDictionary *json = result;
     if (json[@"data"] && [json[@"data"] isKindOfClass:NSDictionary.class]) {
       NSDictionary *data = json[@"data"];
-      if (data[@"homeV3"] || data[@"newsV3"] || data[@"popularV3"]) {
-        NSDictionary *elements = data[data.allKeys[0]][@"elements"];
-        NSMutableArray *edges = elements[@"edges"];
-        for (NSDictionary *edge in edges)
-          if ([edge[@"node"][@"cells"][0][@"__typename"] isEqualToString:@"AdMetadataCell"])
-            edge[@"node"][@"cells"] = @[ @{} ];
+      if (data.allValues.count != 0) {
+        NSDictionary *feed = data.allValues[0];
+        if ([feed isKindOfClass:NSDictionary.class] && feed[@"elements"]) {
+          for (NSDictionary *edge in feed[@"elements"][@"edges"]) {
+            for (NSMutableDictionary *cell in edge[@"node"][@"cells"]) {
+              if ([cell[@"__typename"] isEqualToString:@"ActionCell"]) {
+                if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
+                  cell[@"isAwardHidden"] = @YES;
+                  cell[@"goldenUpvoteInfo"][@"isGildable"] = @NO;
+                }
+                if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores])
+                  cell[@"isScoreHidden"] = @YES;
+              } else if ([cell[@"__typename"] isEqualToString:@"AdMetadataCell"] && [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) {
+                edge[@"node"][@"cells"] = @[ @{} ];
+              }
+            }
+          }
+        }
       }
     }
   }
