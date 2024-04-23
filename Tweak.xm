@@ -84,35 +84,56 @@ static NSArray *filteredObjects(NSArray *objects) {
                   }]];
 }
 
-%hook NSJSONSerialization
-+ (id)JSONObjectWithData:(NSData *)data options:(NSJSONReadingOptions)opt error:(NSError * _Nullable *)error {
-  id result = %orig;
-  if ([result isKindOfClass:NSMutableDictionary.class]) {
-    NSDictionary *json = result;
-    if (json[@"data"] && [json[@"data"] isKindOfClass:NSDictionary.class]) {
-      NSDictionary *data = json[@"data"];
-      if (data.allValues.count != 0) {
-        NSDictionary *feed = data.allValues[0];
-        if ([feed isKindOfClass:NSDictionary.class] && feed[@"elements"]) {
-          for (NSDictionary *edge in feed[@"elements"][@"edges"]) {
-            for (NSMutableDictionary *cell in edge[@"node"][@"cells"]) {
-              if ([cell[@"__typename"] isEqualToString:@"ActionCell"]) {
-                if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
-                  cell[@"isAwardHidden"] = @YES;
-                  cell[@"goldenUpvoteInfo"][@"isGildable"] = @NO;
+%hook NSURLSession
+- (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request
+                            completionHandler:(void (^)(NSData *data, NSURLResponse *response,
+                                                        NSError *error))completionHandler {
+  if (![request.URL.host isEqualToString:@"gql-fed.reddit.com"]) return %orig;
+  NSError *error;
+  NSDictionary *query = [NSJSONSerialization JSONObjectWithData:request.HTTPBody options:NSJSONReadingMutableContainers error:&error];
+  if (!error && [query isKindOfClass:NSDictionary.class]) {
+    NSMutableDictionary *variables = query[@"variables"];
+    if (variables[@"includeGoldenUpvoteInfo"] && [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards])
+      variables[@"includeGoldenUpvoteInfo"] = @NO;
+    NSData *queryData = [NSJSONSerialization dataWithJSONObject:query options:0 error:&error];
+    if (!error) {
+      if (![request isKindOfClass:NSMutableURLRequest.class])
+        request = request.mutableCopy;
+      ((NSMutableURLRequest *)request).HTTPBody = queryData;
+    }
+  }
+  void (^newCompletionHandler)(NSData *, NSURLResponse *, NSError *) = ^(NSData *data, NSURLResponse *response, NSError *error) {
+    if (error) return completionHandler(data, response, error);
+    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
+    if ([json isKindOfClass:NSDictionary.class]) {
+      if (json[@"data"] && [json[@"data"] isKindOfClass:NSDictionary.class]) {
+        NSDictionary *data = json[@"data"];
+        if (data.allValues.count != 0) {
+          NSDictionary *feed = data.allValues[0];
+          if ([feed isKindOfClass:NSDictionary.class] && feed[@"elements"]) {
+            for (NSDictionary *edge in feed[@"elements"][@"edges"]) {
+              for (NSMutableDictionary *cell in edge[@"node"][@"cells"]) {
+                if ([cell[@"__typename"] isEqualToString:@"ActionCell"]) {
+                  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
+                    cell[@"isAwardHidden"] = @YES;
+                    cell[@"goldenUpvoteInfo"][@"isGildable"] = @NO;
+                  }
+                  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores])
+                    cell[@"isScoreHidden"] = @YES;
+                } else if ([cell[@"__typename"] isEqualToString:@"AdMetadataCell"] &&
+                          [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) {
+                  edge[@"node"][@"cells"] = @[ @{} ];
                 }
-                if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores])
-                  cell[@"isScoreHidden"] = @YES;
-              } else if ([cell[@"__typename"] isEqualToString:@"AdMetadataCell"] && [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) {
-                edge[@"node"][@"cells"] = @[ @{} ];
               }
             }
           }
         }
       }
     }
-  }
-  return result;
+    data = [NSJSONSerialization dataWithJSONObject:json options:0 error:nil];
+    completionHandler(data, response, error);
+  };
+  return %orig(request, newCompletionHandler);
 }
 %end
 
@@ -276,7 +297,8 @@ static void add_image(const struct mach_header *mh, intptr_t vmaddr_slide) {
 }
 
 // static bool (*orig__availability_version_check)(int, int, uint, uint);
-// static bool hook__availability_version_check(int Platform, int Major, uint Minor, uint Subminor) {
+// static bool hook__availability_version_check(int Platform, int Major, uint Minor, uint Subminor)
+// {
 //   return Major >= 15 ? NO : orig__availability_version_check(Platform, Major, Minor, Subminor);
 // }
 
