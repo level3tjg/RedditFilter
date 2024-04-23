@@ -84,6 +84,27 @@ static NSArray *filteredObjects(NSArray *objects) {
                   }]];
 }
 
+%hook NSJSONSerialization
++ (id)JSONObjectWithData:(NSData *)data options:(NSJSONReadingOptions)opt error:(NSError * _Nullable *)error {
+  id result = %orig;
+  if (![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) return result;
+  if ([result isKindOfClass:NSMutableDictionary.class]) {
+    NSDictionary *json = result;
+    if (json[@"data"] && [json[@"data"] isKindOfClass:NSDictionary.class]) {
+      NSDictionary *data = json[@"data"];
+      if (data[@"homeV3"] || data[@"newsV3"] || data[@"popularV3"]) {
+        NSDictionary *elements = data[data.allKeys[0]][@"elements"];
+        NSMutableArray *edges = elements[@"edges"];
+        for (NSDictionary *edge in edges)
+          if ([edge[@"node"][@"cells"][0][@"__typename"] isEqualToString:@"AdMetadataCell"])
+            edge[@"node"][@"cells"] = @[ @{} ];
+      }
+    }
+  }
+  return result;
+}
+%end
+
 %hook Listing
 - (void)fetchNextPage:(id (^)(NSArray *, id))completionHandler {
   id (^newCompletionHandler)(NSArray *, id) = ^(NSArray *objects, id _) {
@@ -243,10 +264,10 @@ static void add_image(const struct mach_header *mh, intptr_t vmaddr_slide) {
   }
 }
 
-static bool (*orig__availability_version_check)(int, int, uint, uint);
-static bool hook__availability_version_check(int Platform, int Major, uint Minor, uint Subminor) {
-  return Major >= 15 ? NO : orig__availability_version_check(Platform, Major, Minor, Subminor);
-}
+// static bool (*orig__availability_version_check)(int, int, uint, uint);
+// static bool hook__availability_version_check(int Platform, int Major, uint Minor, uint Subminor) {
+//   return Major >= 15 ? NO : orig__availability_version_check(Platform, Major, Minor, Subminor);
+// }
 
 %ctor {
   assetBundles = [NSMutableArray new];
@@ -271,9 +292,11 @@ static bool hook__availability_version_check(int Platform, int Major, uint Minor
                                                 inDirectory:@"Frameworks"]];
     if (bundle) [assetBundles addObject:bundle];
   }
-  rebind_symbols(
-      (struct rebinding[]){{"_availability_version_check", (void *)hook__availability_version_check,
-                            (void **)&orig__availability_version_check}},
-      1);
+  // rebind_symbols(
+  //     (struct rebinding[]){
+  //         {"_availability_version_check", (void *)hook__availability_version_check,
+  //          (void **)&orig__availability_version_check},
+  //     },
+  //     1);
   _dyld_register_func_for_add_image(add_image);
 }
