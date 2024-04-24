@@ -17,7 +17,7 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = RedditFilter
 
-$(TWEAK_NAME)_FILES = $(wildcard *.x*) fishhook/fishhook.c
+$(TWEAK_NAME)_FILES = $(wildcard *.x*)
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc -Iinclude -Wno-module-import-in-extern-c
 $(TWEAK_NAME)_INJECT_DYLIBS = $(THEOS_OBJ_DIR)/RedditSideloadFix.dylib
 

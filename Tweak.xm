@@ -7,7 +7,6 @@
 #import <mach-o/dyld.h>
 #import <objc/runtime.h>
 #import "Preferences.h"
-#import "fishhook/fishhook.h"
 
 @interface UIImage ()
 + (UIImage *)imageNamed:(NSString *)name inBundle:(NSBundle *)bundle;
@@ -341,12 +340,6 @@ static void add_image(const struct mach_header *mh, intptr_t vmaddr_slide) {
   }
 }
 
-// static bool (*orig__availability_version_check)(int, int, uint, uint);
-// static bool hook__availability_version_check(int Platform, int Major, uint Minor, uint Subminor)
-// {
-//   return Major >= 15 ? NO : orig__availability_version_check(Platform, Major, Minor, Subminor);
-// }
-
 %ctor {
   assetBundles = [NSMutableArray new];
   [assetBundles addObject:NSBundle.mainBundle];
@@ -370,11 +363,5 @@ static void add_image(const struct mach_header *mh, intptr_t vmaddr_slide) {
                                                 inDirectory:@"Frameworks"]];
     if (bundle) [assetBundles addObject:bundle];
   }
-  // rebind_symbols(
-  //     (struct rebinding[]){
-  //         {"_availability_version_check", (void *)hook__availability_version_check,
-  //          (void **)&orig__availability_version_check},
-  //     },
-  //     1);
   _dyld_register_func_for_add_image(add_image);
 }

@@ -1,6 +1,3 @@
-[submodule "fishhook"]
-	path = fishhook
-	url = https://github.com/facebook/fishhook
 [submodule "RedditSideloadFix"]
 	path = RedditSideloadFix
 	url = https://github.com/level3tjg/RedditSideloadFix
