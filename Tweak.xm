@@ -92,12 +92,13 @@ static void filterNode(NSMutableDictionary *node) {
       node[@"awardings"] = @[];
       node[@"isGildable"] = @NO;
     }
-    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores]) {
+
+    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores])
       node[@"isScoreHidden"] = @YES;
-    }
-    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW] && [node[@"isNsfw"] boolValue]) {
+
+    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW] &&
+        [node[@"isNsfw"] boolValue])
       node[@"isHidden"] = @YES;
-    }
   }
   if ([node[@"__typename"] isEqualToString:@"CellGroup"]) {
     for (NSMutableDictionary *cell in node[@"cells"]) {
@@ -106,21 +107,19 @@ static void filterNode(NSMutableDictionary *node) {
           cell[@"isAwardHidden"] = @YES;
           cell[@"goldenUpvoteInfo"][@"isGildable"] = @NO;
         }
-        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores]) {
+
+        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores])
           cell[@"isScoreHidden"] = @YES;
-        }
       }
     }
   }
-  
+
   // Ad post
   if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) {
-    if ([node[@"__typename"] isEqualToString:@"AdPost"]) {
-      node[@"isHidden"] = @YES;
-    }
-    if ([node[@"__typename"] isEqualToString:@"CellGroup"] && [node[@"adPayload"] isKindOfClass:NSDictionary.class]) {
+    if ([node[@"__typename"] isEqualToString:@"AdPost"]) node[@"isHidden"] = @YES;
+    if ([node[@"__typename"] isEqualToString:@"CellGroup"] &&
+        [node[@"adPayload"] isKindOfClass:NSDictionary.class])
       node[@"cells"] = @[];
-    }
   }
 
   // Comment
@@ -129,12 +128,14 @@ static void filterNode(NSMutableDictionary *node) {
       node[@"awardings"] = @[];
       node[@"isGildable"] = @NO;
     }
-    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores]) {
+
+    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores])
       node[@"isScoreHidden"] = @YES;
-    }
-    if ([node[@"authorInfo"] isKindOfClass:NSDictionary.class] && [node[@"authorInfo"][@"id"] isEqualToString:@"t2_6l4z3"] && [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAutoCollapseAutoMod]) {
+
+    if ([node[@"authorInfo"] isKindOfClass:NSDictionary.class] &&
+        [node[@"authorInfo"][@"id"] isEqualToString:@"t2_6l4z3"] &&
+        [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAutoCollapseAutoMod])
       node[@"isInitiallyCollapsed"] = @YES;
-    }
   }
 }
 
@@ -142,44 +143,50 @@ static void filterNode(NSMutableDictionary *node) {
 - (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request
                             completionHandler:(void (^)(NSData *data, NSURLResponse *response,
                                                         NSError *error))completionHandler {
-  if (![request.URL.host isEqualToString:@"gql-fed.reddit.com"]) return %orig;
-  void (^newCompletionHandler)(NSData *, NSURLResponse *, NSError *) = ^(NSData *data, NSURLResponse *response, NSError *error) {
-    if (error) return completionHandler(data, response, error);
-    NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
-    if ([json isKindOfClass:NSDictionary.class]) {
-      if (json[@"data"] && [json[@"data"] isKindOfClass:NSDictionary.class]) {
-        NSDictionary *data = json[@"data"];
-        if (data.allValues.count != 0) {
-          NSMutableDictionary *root = data.allValues[0];
-          if ([root isKindOfClass:NSDictionary.class]) {
+  if (![request.URL.host hasPrefix:@"gql"] && ![request.URL.host hasPrefix:@"oauth"])
+    return %orig;
+  void (^newCompletionHandler)(NSData *, NSURLResponse *, NSError *) =
+      ^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) return completionHandler(data, response, error);
+        NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data
+                                                             options:NSJSONReadingMutableContainers
+                                                               error:nil];
+        if ([json isKindOfClass:NSDictionary.class]) {
+          if (json[@"data"] && [json[@"data"] isKindOfClass:NSDictionary.class]) {
+            NSDictionary *data = json[@"data"];
+            NSMutableDictionary *root = data.allValues.firstObject;
+            if ([root isKindOfClass:NSDictionary.class]) {
+              if ([root.allValues.firstObject isKindOfClass:NSDictionary.class] &&
+                  root.allValues.firstObject[@"edges"])
+                for (NSMutableDictionary *edge in root.allValues.firstObject[@"edges"])
+                  filterNode(edge[@"node"]);
 
-            if ([root.allValues.firstObject isKindOfClass:NSDictionary.class] && root.allValues.firstObject[@"edges"])
-              for (NSMutableDictionary *edge in root.allValues.firstObject[@"edges"])
-                filterNode(edge[@"node"]);
+              if (root[@"commentForest"])
+                for (NSMutableDictionary *tree in root[@"commentForest"][@"trees"])
+                  filterNode(tree[@"node"]);
 
-            if (root[@"commentForest"])
-              for (NSMutableDictionary *tree in root[@"commentForest"][@"trees"])
-                filterNode(tree[@"node"]);
+              if (root[@"commentsPageAds"] &&
+                  [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted])
+                root[@"commentsPageAds"] = @[];
 
-            if (root[@"commentsPageAds"] && [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted])
-              root[@"commentsPageAds"] = @[];
+              if (root[@"recommendations"] &&
+                  [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended])
+                root[@"recommendations"] = @[];
 
-            if (root[@"recommendations"] && [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended])
-              root[@"recommendations"] = @[];
-
-          } else if ([root isKindOfClass:NSArray.class]) {
-            for (NSMutableDictionary *node in (NSArray *)root)
-              filterNode(node);
+            } else if ([root isKindOfClass:NSArray.class]) {
+              for (NSMutableDictionary *node in (NSArray *)root) filterNode(node);
+            }
           }
         }
-      }
-    }
-    data = [NSJSONSerialization dataWithJSONObject:json options:0 error:nil];
-    completionHandler(data, response, error);
-  };
+        data = [NSJSONSerialization dataWithJSONObject:json options:0 error:nil];
+        completionHandler(data, response, error);
+      };
   return %orig(request, newCompletionHandler);
 }
 %end
+
+// Only necessary for older app versions
+%group Legacy
 
 %hook Listing
 - (void)fetchNextPage:(id (^)(NSArray *, id))completionHandler {
@@ -303,42 +310,34 @@ static void filterNode(NSMutableDictionary *node) {
   if (!horizontalStackView || !detailLabel) return;
   if (detailLabel.text) {
     UIView *contentView = [self contentView];
-    [contentView addConstraint:[NSLayoutConstraint constraintWithItem:detailLabel
-                                                            attribute:NSLayoutAttributeHeight
-                                                            relatedBy:NSLayoutRelationEqual
-                                                               toItem:horizontalStackView
-                                                            attribute:NSLayoutAttributeHeight
-                                                           multiplier:.33
-                                                             constant:0]];
-    [contentView addConstraint:[NSLayoutConstraint constraintWithItem:horizontalStackView
-                                                            attribute:NSLayoutAttributeHeight
-                                                            relatedBy:NSLayoutRelationEqual
-                                                               toItem:contentView
-                                                            attribute:NSLayoutAttributeHeight
-                                                           multiplier:1
-                                                             constant:0]];
-    [contentView addConstraint:[NSLayoutConstraint constraintWithItem:horizontalStackView
-                                                            attribute:NSLayoutAttributeCenterY
-                                                            relatedBy:NSLayoutRelationEqual
-                                                               toItem:contentView
-                                                            attribute:NSLayoutAttributeCenterY
-                                                           multiplier:1
-                                                             constant:0]];
+    [contentView addConstraints:@[
+      [NSLayoutConstraint constraintWithItem:detailLabel
+                                   attribute:NSLayoutAttributeHeight
+                                   relatedBy:NSLayoutRelationEqual
+                                      toItem:horizontalStackView
+                                   attribute:NSLayoutAttributeHeight
+                                  multiplier:.33
+                                    constant:0],
+      [NSLayoutConstraint constraintWithItem:horizontalStackView
+                                   attribute:NSLayoutAttributeHeight
+                                   relatedBy:NSLayoutRelationEqual
+                                      toItem:contentView
+                                   attribute:NSLayoutAttributeHeight
+                                  multiplier:1
+                                    constant:0],
+      [NSLayoutConstraint constraintWithItem:horizontalStackView
+                                   attribute:NSLayoutAttributeCenterY
+                                   relatedBy:NSLayoutRelationEqual
+                                      toItem:contentView
+                                   attribute:NSLayoutAttributeCenterY
+                                  multiplier:1
+                                    constant:0]
+    ]];
   }
 }
 %end
 
-static BOOL initialized = NO;
-
-static void add_image(const struct mach_header *mh, intptr_t vmaddr_slide) {
-  if (!initialized && %c(Listing)) {
-    %init(Comment = CoreClass(@"Comment"), Post = CoreClass(@"Post"),
-                     QuickActionViewModel = CoreClass(@"QuickActionViewModel"),
-                     StreamManager = CoreClass(@"StreamManager"),
-                     ToggleImageTableViewCell = CoreClass(@"ToggleImageTableViewCell"));
-    initialized = YES;
-  }
-}
+%end
 
 %ctor {
   assetBundles = [NSMutableArray new];
@@ -363,5 +362,9 @@ static void add_image(const struct mach_header *mh, intptr_t vmaddr_slide) {
                                                 inDirectory:@"Frameworks"]];
     if (bundle) [assetBundles addObject:bundle];
   }
-  _dyld_register_func_for_add_image(add_image);
+  %init;
+  %init(Legacy, Comment = CoreClass(@"Comment"), Post = CoreClass(@"Post"),
+                   QuickActionViewModel = CoreClass(@"QuickActionViewModel"),
+                   StreamManager = CoreClass(@"StreamManager"),
+                   ToggleImageTableViewCell = CoreClass(@"ToggleImageTableViewCell"));
 }
