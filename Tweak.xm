@@ -84,24 +84,66 @@ static NSArray *filteredObjects(NSArray *objects) {
                   }]];
 }
 
+static void filterNode(NSMutableDictionary *node) {
+  if (![node isKindOfClass:NSMutableDictionary.class]) return;
+
+  // Regular post
+  if ([node[@"__typename"] isEqualToString:@"SubredditPost"]) {
+    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
+      node[@"awardings"] = @[];
+      node[@"isGildable"] = @NO;
+    }
+    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores]) {
+      node[@"isScoreHidden"] = @YES;
+    }
+    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW] && [node[@"isNsfw"] boolValue]) {
+      node[@"isHidden"] = @YES;
+    }
+  }
+  if ([node[@"__typename"] isEqualToString:@"CellGroup"]) {
+    for (NSMutableDictionary *cell in node[@"cells"]) {
+      if ([cell[@"__typename"] isEqualToString:@"ActionCell"]) {
+        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
+          cell[@"isAwardHidden"] = @YES;
+          cell[@"goldenUpvoteInfo"][@"isGildable"] = @NO;
+        }
+        if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores]) {
+          cell[@"isScoreHidden"] = @YES;
+        }
+      }
+    }
+  }
+  
+  // Ad post
+  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) {
+    if ([node[@"__typename"] isEqualToString:@"AdPost"]) {
+      node[@"isHidden"] = @YES;
+    }
+    if ([node[@"__typename"] isEqualToString:@"CellGroup"] && [node[@"adPayload"] isKindOfClass:NSDictionary.class]) {
+      node[@"cells"] = @[];
+    }
+  }
+
+  // Comment
+  if ([node[@"__typename"] isEqualToString:@"Comment"]) {
+    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
+      node[@"awardings"] = @[];
+      node[@"isGildable"] = @NO;
+    }
+    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores]) {
+      node[@"isScoreHidden"] = @YES;
+    }
+    if ([node[@"authorInfo"] isKindOfClass:NSDictionary.class] && [node[@"authorInfo"][@"id"] isEqualToString:@"t2_6l4z3"] && [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAutoCollapseAutoMod]) {
+      node[@"isInitiallyCollapsed"] = @YES;
+    }
+  }
+}
+
 %hook NSURLSession
 - (NSURLSessionDataTask *)dataTaskWithRequest:(NSURLRequest *)request
                             completionHandler:(void (^)(NSData *data, NSURLResponse *response,
                                                         NSError *error))completionHandler {
   if (![request.URL.host isEqualToString:@"gql-fed.reddit.com"]) return %orig;
-  NSError *error;
-  NSDictionary *query = [NSJSONSerialization JSONObjectWithData:request.HTTPBody options:NSJSONReadingMutableContainers error:&error];
-  if (!error && [query isKindOfClass:NSDictionary.class]) {
-    NSMutableDictionary *variables = query[@"variables"];
-    if (variables[@"includeGoldenUpvoteInfo"] && [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards])
-      variables[@"includeGoldenUpvoteInfo"] = @NO;
-    NSData *queryData = [NSJSONSerialization dataWithJSONObject:query options:0 error:&error];
-    if (!error) {
-      if (![request isKindOfClass:NSMutableURLRequest.class])
-        request = request.mutableCopy;
-      ((NSMutableURLRequest *)request).HTTPBody = queryData;
-    }
-  }
   void (^newCompletionHandler)(NSData *, NSURLResponse *, NSError *) = ^(NSData *data, NSURLResponse *response, NSError *error) {
     if (error) return completionHandler(data, response, error);
     NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
@@ -109,23 +151,26 @@ static NSArray *filteredObjects(NSArray *objects) {
       if (json[@"data"] && [json[@"data"] isKindOfClass:NSDictionary.class]) {
         NSDictionary *data = json[@"data"];
         if (data.allValues.count != 0) {
-          NSDictionary *feed = data.allValues[0];
-          if ([feed isKindOfClass:NSDictionary.class] && feed[@"elements"]) {
-            for (NSDictionary *edge in feed[@"elements"][@"edges"]) {
-              for (NSMutableDictionary *cell in edge[@"node"][@"cells"]) {
-                if ([cell[@"__typename"] isEqualToString:@"ActionCell"]) {
-                  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
-                    cell[@"isAwardHidden"] = @YES;
-                    cell[@"goldenUpvoteInfo"][@"isGildable"] = @NO;
-                  }
-                  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores])
-                    cell[@"isScoreHidden"] = @YES;
-                } else if ([cell[@"__typename"] isEqualToString:@"AdMetadataCell"] &&
-                          [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) {
-                  edge[@"node"][@"cells"] = @[ @{} ];
-                }
-              }
-            }
+          NSMutableDictionary *root = data.allValues[0];
+          if ([root isKindOfClass:NSDictionary.class]) {
+
+            if ([root.allValues.firstObject isKindOfClass:NSDictionary.class] && root.allValues.firstObject[@"edges"])
+              for (NSMutableDictionary *edge in root.allValues.firstObject[@"edges"])
+                filterNode(edge[@"node"]);
+
+            if (root[@"commentForest"])
+              for (NSMutableDictionary *tree in root[@"commentForest"][@"trees"])
+                filterNode(tree[@"node"]);
+
+            if (root[@"commentsPageAds"] && [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted])
+              root[@"commentsPageAds"] = @[];
+
+            if (root[@"recommendations"] && [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended])
+              root[@"recommendations"] = @[];
+
+          } else if ([root isKindOfClass:NSArray.class]) {
+            for (NSMutableDictionary *node in (NSArray *)root)
+              filterNode(node);
           }
         }
       }
