@@ -4,112 +4,112 @@ extern NSBundle *redditFilterBundle;
 extern UIImage *iconWithName(NSString *iconName);
 extern Class CoreClass(NSString *name);
 
+#define LOC(x, d) [redditFilterBundle localizedStringForKey:x value:d table:nil]
+
 %subclass FeedFilterSettingsViewController : BaseTableViewController
 %new
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
   return 1;
 }
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-  return 7;
+  switch (section) {
+    case 0:
+      return 7;
+    default:
+      return 0;
+  }
 }
 - (UITableViewCell *)tableView:(UITableView *)tableView
          cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-  ToggleImageTableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:kToggleCellID
-                                                                   forIndexPath:indexPath];
-
   NSString *mainLabelText;
   NSString *detailLabelText;
   NSArray *iconNames;
+  ToggleImageTableViewCell *toggleCell;
+  ImageLabelTableViewCell *cell;
+  switch (indexPath.section) {
+    case 0: {
+      toggleCell = [tableView dequeueReusableCellWithIdentifier:kToggleCellID
+                                                   forIndexPath:indexPath];
 
-  switch (indexPath.row) {
-    case 0:
-      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.promoted.title"
-                                                          value:@"Promoted"
-                                                          table:nil];
-      iconNames = @[ @"icon_tag" ];
-      cell.accessorySwitch.on =
-          ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted];
-      [cell.accessorySwitch addTarget:self
-                               action:@selector(didTogglePromotedSwitch:)
-                     forControlEvents:UIControlEventValueChanged];
+      switch (indexPath.row) {
+        case 0:
+          mainLabelText = LOC(@"filter.settings.promoted.title", @"Promoted");
+          iconNames = @[ @"icon_tag" ];
+          toggleCell.accessorySwitch.on =
+              ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted];
+          [toggleCell.accessorySwitch addTarget:self
+                                         action:@selector(didTogglePromotedSwitch:)
+                               forControlEvents:UIControlEventValueChanged];
+          break;
+        case 1:
+          mainLabelText = LOC(@"filter.settings.recommended.title", @"Recommended");
+          iconNames = @[ @"icon_spam" ];
+          toggleCell.accessorySwitch.on =
+              ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended];
+          [toggleCell.accessorySwitch addTarget:self
+                                         action:@selector(didToggleRecommendedSwitch:)
+                               forControlEvents:UIControlEventValueChanged];
+          break;
+        case 2:
+          mainLabelText = LOC(@"filter.settings.livestreams.title", @"Livestreams");
+          iconNames = @[ @"icon_videocamera", @"icon_video_camera" ];
+          toggleCell.accessorySwitch.on =
+              ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams];
+          [toggleCell.accessorySwitch addTarget:self
+                                         action:@selector(didToggleLivestreamsSwitch:)
+                               forControlEvents:UIControlEventValueChanged];
+          break;
+        case 3:
+          mainLabelText = LOC(@"filter.settings.nsfw.title", @"NSFW");
+          iconNames = @[ @"icon_nsfw" ];
+          toggleCell.accessorySwitch.on =
+              ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW];
+          [toggleCell.accessorySwitch addTarget:self
+                                         action:@selector(didToggleNsfwSwitch:)
+                               forControlEvents:UIControlEventValueChanged];
+          break;
+        case 4:
+          mainLabelText = LOC(@"filter.settings.awards.title", @"Awards");
+          detailLabelText =
+              LOC(@"filter.settings.awards.subtitle", @"Show awards on posts and comments");
+          iconNames = @[ @"icon_gift_fill", @"icon_award", @"icon-award-outline" ];
+          toggleCell.accessorySwitch.on =
+              ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards];
+          [toggleCell.accessorySwitch addTarget:self
+                                         action:@selector(didToggleAwardsSwitch:)
+                               forControlEvents:UIControlEventValueChanged];
+          break;
+        case 5:
+          mainLabelText = LOC(@"filter.settings.scores.title", @"Scores");
+          detailLabelText =
+              LOC(@"filter.settings.scores.subtitle", @"Show vote count on posts and comments");
+          iconNames = @[ @"icon_upvote" ];
+          toggleCell.accessorySwitch.on =
+              ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores];
+          [toggleCell.accessorySwitch addTarget:self
+                                         action:@selector(didToggleScoresSwitch:)
+                               forControlEvents:UIControlEventValueChanged];
+          break;
+        case 6:
+          mainLabelText = LOC(@"filter.settings.automod.title", @"AutoMod");
+          detailLabelText =
+              LOC(@"filter.settings.automod.subtitle", @"Auto collapse AutoMod comments");
+          iconNames = @[ @"icon_mod" ];
+          toggleCell.accessorySwitch.on =
+              [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAutoCollapseAutoMod];
+          [toggleCell.accessorySwitch addTarget:self
+                                         action:@selector(didToggleAutoCollapseAutoModSwitch:)
+                               forControlEvents:UIControlEventValueChanged];
+          break;
+        default:
+          return nil;
+      }
+
+      cell = toggleCell;
       break;
-    case 1:
-      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.recommended.title"
-                                                          value:@"Recommended"
-                                                          table:nil];
-      iconNames = @[ @"icon_spam" ];
-      cell.accessorySwitch.on =
-          ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended];
-      [cell.accessorySwitch addTarget:self
-                               action:@selector(didToggleRecommendedSwitch:)
-                     forControlEvents:UIControlEventValueChanged];
-      break;
-    case 2:
-      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.livestreams.title"
-                                                          value:@"Livestreams"
-                                                          table:nil];
-      iconNames = @[ @"icon_videocamera", @"icon_video_camera" ];
-      cell.accessorySwitch.on =
-          ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams];
-      [cell.accessorySwitch addTarget:self
-                               action:@selector(didToggleLivestreamsSwitch:)
-                     forControlEvents:UIControlEventValueChanged];
-      break;
-    case 3:
-      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.nsfw.title"
-                                                          value:@"NSFW"
-                                                          table:nil];
-      iconNames = @[ @"icon_nsfw" ];
-      cell.accessorySwitch.on = ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW];
-      [cell.accessorySwitch addTarget:self
-                               action:@selector(didToggleNsfwSwitch:)
-                     forControlEvents:UIControlEventValueChanged];
-      break;
-    case 4:
-      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.awards.title"
-                                                          value:@"Awards"
-                                                          table:nil];
-      detailLabelText =
-          [redditFilterBundle localizedStringForKey:@"filter.settings.awards.subtitle"
-                                              value:@"Show awards on posts and comments"
-                                              table:nil];
-      iconNames = @[ @"icon_gift_fill", @"icon_award" ];
-      cell.accessorySwitch.on =
-          ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards];
-      [cell.accessorySwitch addTarget:self
-                               action:@selector(didToggleAwardsSwitch:)
-                     forControlEvents:UIControlEventValueChanged];
-      break;
-    case 5:
-      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.scores.title"
-                                                          value:@"Scores"
-                                                          table:nil];
-      detailLabelText =
-          [redditFilterBundle localizedStringForKey:@"filter.settings.scores.subtitle"
-                                              value:@"Show vote count on posts and comments"
-                                              table:nil];
-      iconNames = @[ @"icon_upvote" ];
-      cell.accessorySwitch.on =
-          ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores];
-      [cell.accessorySwitch addTarget:self
-                               action:@selector(didToggleScoresSwitch:)
-                     forControlEvents:UIControlEventValueChanged];
-      break;
-    case 6:
-      mainLabelText = [redditFilterBundle localizedStringForKey:@"filter.settings.automod.title"
-                                                          value:@"AutoMod"
-                                                          table:nil];
-      detailLabelText =
-          [redditFilterBundle localizedStringForKey:@"filter.settings.automod.subtitle"
-                                              value:@"Auto collapse AutoMod comments"
-                                              table:nil];
-      iconNames = @[ @"icon_mod" ];
-      cell.accessorySwitch.on =
-          [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAutoCollapseAutoMod];
-      [cell.accessorySwitch addTarget:self
-                               action:@selector(didToggleAutoCollapseAutoModSwitch:)
-                     forControlEvents:UIControlEventValueChanged];
-      break;
+    }
+    default:
+      return nil;
   }
 
   ([cell respondsToSelector:@selector(mainLabel)] ? cell.mainLabel : cell.imageLabelView.mainLabel)
@@ -149,9 +149,13 @@ extern Class CoreClass(NSString *name);
   [headerView.contentView addSubview:label];
   [headerView associatePropertySetter:@selector(setBackgroundColor:)
               withThemePropertyGetter:@selector(canvasColor)];
-  label.text = [[redditFilterBundle localizedStringForKey:@"filter.settings.header"
-                                                    value:@"Filters"
-                                                    table:nil] uppercaseString];
+  switch (section) {
+    case 0:
+      label.text = [LOC(@"filter.settings.header", @"Filters") uppercaseString];
+      break;
+    default:
+      return nil;
+  }
   return headerView;
 }
 %new
@@ -171,10 +175,14 @@ extern Class CoreClass(NSString *name);
   [footerView.contentView addSubview:label];
   [footerView associatePropertySetter:@selector(setBackgroundColor:)
               withThemePropertyGetter:@selector(canvasColor)];
-  label.text =
-      [redditFilterBundle localizedStringForKey:@"filter.settings.footer"
-                                          value:@"Filter specific types of posts from your feed."
-                                          table:nil];
+  switch (section) {
+    case 0:
+      label.text =
+          LOC(@"filter.settings.footer", @"Filter specific types of posts from your feed");
+      break;
+    default:
+      return nil;
+  }
   return footerView;
 }
 %new
@@ -183,11 +191,11 @@ extern Class CoreClass(NSString *name);
 }
 - (void)viewDidLoad {
   %orig;
-  self.title = [redditFilterBundle localizedStringForKey:@"filter.settings.title"
-                                                   value:@"Feed filter"
-                                                   table:nil];
+  self.title = LOC(@"filter.settings.title", @"Feed filter");
   [self.tableView registerClass:CoreClass(@"ToggleImageTableViewCell")
          forCellReuseIdentifier:kToggleCellID];
+  [self.tableView registerClass:CoreClass(@"ImageLabelTableViewCell")
+         forCellReuseIdentifier:kLabelCellID];
 }
 %new
 - (void)didTogglePromotedSwitch:(UISwitch *)sender {

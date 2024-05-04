@@ -7,3 +7,4 @@
 #define kRedditFilterAutoCollapseAutoMod @"kRedditFilterAutoCollapseAutoMod"
 
 #define kToggleCellID @"kToggleCellID"
+#define kLabelCellID @"kLabelCellID"
