@@ -148,10 +148,11 @@ static void filterNode(NSMutableDictionary *node) {
     return %orig;
   void (^newCompletionHandler)(NSData *, NSURLResponse *, NSError *) =
       ^(NSData *data, NSURLResponse *response, NSError *error) {
-        if (error) return completionHandler(data, response, error);
+        if (!data || error) return completionHandler(data, response, error);
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data
                                                              options:NSJSONReadingMutableContainers
-                                                               error:nil];
+                                                               error:&error];
+        if (!json || error) return completionHandler(data, response, error);
         if ([json isKindOfClass:NSDictionary.class]) {
           if (json[@"data"] && [json[@"data"] isKindOfClass:NSDictionary.class]) {
             NSDictionary *data = json[@"data"];
