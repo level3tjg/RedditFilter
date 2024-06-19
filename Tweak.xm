@@ -27,8 +27,7 @@ extern "C" UIImage *iconWithName(NSString *iconName) {
       iconImage = [UIImage imageNamed:[NSString stringWithFormat:@"%@_%@", iconName, iconSize]
                              inBundle:bundle];
     }
-    if (!iconImage)
-      iconImage = [UIImage imageNamed:iconName inBundle:bundle];
+    if (!iconImage) iconImage = [UIImage imageNamed:iconName inBundle:bundle];
   }
   return iconImage;
 }

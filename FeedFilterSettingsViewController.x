@@ -61,7 +61,7 @@ extern Class CoreClass(NSString *name);
           break;
         case 3:
           mainLabelText = LOC(@"filter.settings.nsfw.title", @"NSFW");
-          iconNames = @[ @"icon_nsfw" ];
+          iconNames = @[ @"icon_nsfw_outline", @"icon_nsfw" ];
           toggleCell.accessorySwitch.on =
               ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW];
           [toggleCell.accessorySwitch addTarget:self
@@ -177,8 +177,7 @@ extern Class CoreClass(NSString *name);
               withThemePropertyGetter:@selector(canvasColor)];
   switch (section) {
     case 0:
-      label.text =
-          LOC(@"filter.settings.footer", @"Filter specific types of posts from your feed");
+      label.text = LOC(@"filter.settings.footer", @"Filter specific types of posts from your feed");
       break;
     default:
       return nil;
