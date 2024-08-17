@@ -8,10 +8,6 @@
 #import <objc/runtime.h>
 #import "Preferences.h"
 
-@interface UIImage ()
-+ (UIImage *)imageNamed:(NSString *)name inBundle:(NSBundle *)bundle;
-@end
-
 static NSMutableArray *assetBundles;
 
 extern "C" UIImage *iconWithName(NSString *iconName) {
@@ -25,9 +21,11 @@ extern "C" UIImage *iconWithName(NSString *iconName) {
     for (NSString *iconSize in commonIconSizes) {
       if (iconImage) break;
       iconImage = [UIImage imageNamed:[NSString stringWithFormat:@"%@_%@", iconName, iconSize]
-                             inBundle:bundle];
+                               inBundle:bundle
+          compatibleWithTraitCollection:nil];
     }
-    if (!iconImage) iconImage = [UIImage imageNamed:iconName inBundle:bundle];
+    if (!iconImage)
+      iconImage = [UIImage imageNamed:iconName inBundle:bundle compatibleWithTraitCollection:nil];
   }
   return iconImage;
 }
