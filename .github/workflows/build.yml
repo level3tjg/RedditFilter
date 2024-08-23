@@ -36,7 +36,7 @@ jobs:
         if: ${{ inputs.create_release }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential checkinstall git autoconf automake libtool-bin rsync llvm xmlstarlet plutil
+          sudo apt-get install -y build-essential checkinstall git autoconf automake libtool-bin rsync llvm xmlstarlet ply
           curl -L https://github.com/libimobiledevice/libplist/releases/download/2.4.0/libplist-2.4.0.tar.bz2 | bzip2 -d | tar -x
           cd libplist*
           ./configure
