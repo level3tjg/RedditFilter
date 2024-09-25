@@ -31,13 +31,18 @@ jobs:
           fi
           echo "id=$(cat control | grep "Package:" | cut -d' ' -f2)" >> $GITHUB_OUTPUT
           echo "version=$version" >> $GITHUB_OUTPUT
-
+      
       - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y rsync
+
+      - name: Install theos-jailed dependencies
         if: ${{ inputs.create_release }}
         run: |
           sudo apt update
-          sudo apt install -y build-essential checkinstall git autoconf automake libtool-bin rsync llvm xmlstarlet
-          curl -L https://github.com/libimobiledevice/libplist/releases/download/2.4.0/libplist-2.4.0.tar.bz2 | bzip2 -d | tar -x
+          sudo apt install -y build-essential checkinstall git autoconf automake libtool-bin llvm xmlstarlet
+          curl -L https://github.com/libimobiledevice/libplist/releases/download/2.6.0/libplist-2.6.0.tar.bz2 | bzip2 -d | tar -x
           cd libplist*
           ./configure
           sudo make install
@@ -85,8 +90,6 @@ jobs:
         if: ${{ inputs.create_release }}
         run: |
           ./theos-jailed/install
-          cd libplist*
-          sudo make uninstall
 
       - name: Build rootless deb
         run: make package
