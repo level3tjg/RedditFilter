@@ -11,7 +11,7 @@ ifdef APP_VERSION
 endif
 
 ifeq ($(SIDELOADED),1)
-  MODULES = jailed
+  export MODULES = jailed
   CODESIGN_IPA = 0
 endif
 
