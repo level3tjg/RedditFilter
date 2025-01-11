@@ -121,6 +121,12 @@ static void filterNode(NSMutableDictionary *node) {
       node[@"cells"] = @[];
   }
 
+  // Recommendation
+  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended]) {
+    if ([node[@"__typename"] isEqualToString:@"CellGroup"] && ![node[@"recommendationContext"] isEqual:[NSNull null]])
+      node[@"cells"] = @[];
+  }
+
   // Comment
   if ([node[@"__typename"] isEqualToString:@"Comment"]) {
     if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
