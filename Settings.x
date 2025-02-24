@@ -37,7 +37,7 @@ extern NSString *localizedString(NSString *key, NSString *table);
          cellForRowAtIndexPath:(NSIndexPath *)indexPath {
   if (indexPath.section == self.feedFilterSectionIndex &&
       indexPath.row == [self tableView:tableView numberOfRowsInSection:indexPath.section] - 1) {
-    UIImage *iconImage = [iconWithName(@"icon_filter") imageScaledToSize:CGSizeMake(20, 20)];
+    UIImage *iconImage = [iconWithName(@"icon_filter") ?: iconWithName(@"icon-filter-outline") imageScaledToSize:CGSizeMake(20, 20)];
     UIImage *accessoryIconImage =
         [iconWithName(@"icon_forward") imageScaledToSize:CGSizeMake(20, 20)];
     ImageLabelTableViewCell *cell = [self
