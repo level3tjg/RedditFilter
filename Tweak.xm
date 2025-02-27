@@ -125,7 +125,10 @@ static void filterNode(NSMutableDictionary *node) {
   if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended]) {
     if ([node[@"__typename"] isEqualToString:@"CellGroup"] &&
         ![node[@"recommendationContext"] isEqual:[NSNull null]])
-      node[@"cells"] = @[];
+      if (!([node[@"recommendationContext"][@"typeName"]
+                isEqualToString:@"PopularRecommendationContext"] &&
+            [node[@"recommendationContext"][@"isContextHidden"] boolValue]))
+        node[@"cells"] = @[];
   }
 
   // Comment
