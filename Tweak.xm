@@ -123,7 +123,8 @@ static void filterNode(NSMutableDictionary *node) {
 
   // Recommendation
   if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended]) {
-    if ([node[@"__typename"] isEqualToString:@"CellGroup"] && ![node[@"recommendationContext"] isEqual:[NSNull null]])
+    if ([node[@"__typename"] isEqualToString:@"CellGroup"] &&
+        ![node[@"recommendationContext"] isEqual:[NSNull null]])
       node[@"cells"] = @[];
   }
 
@@ -152,11 +153,11 @@ static void filterNode(NSMutableDictionary *node) {
     return %orig;
   void (^newCompletionHandler)(NSData *, NSURLResponse *, NSError *) =
       ^(NSData *data, NSURLResponse *response, NSError *error) {
-        if (!data || error) return completionHandler(data, response, error);
+        if (error || !data) return completionHandler(data, response, error);
         NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data
                                                              options:NSJSONReadingMutableContainers
                                                                error:&error];
-        if (!json || error) return completionHandler(data, response, error);
+        if (error || !json) return completionHandler(data, response, error);
         if ([json isKindOfClass:NSDictionary.class]) {
           if (json[@"data"] && [json[@"data"] isKindOfClass:NSDictionary.class]) {
             NSDictionary *data = json[@"data"];
