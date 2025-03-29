@@ -179,6 +179,10 @@ static void filterNode(NSMutableDictionary *node) {
                   [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted])
                 root[@"commentsPageAds"] = @[];
 
+              if (root[@"commentTreeAds"] &&
+                  [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted])
+                root[@"commentTreeAds"] = @[];
+
               if (root[@"recommendations"] &&
                   [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended])
                 root[@"recommendations"] = @[];
