@@ -84,73 +84,72 @@ static NSArray *filteredObjects(NSArray *objects) {
 
 static void filterNode(NSMutableDictionary *node) {
   if (![node isKindOfClass:NSMutableDictionary.class]) return;
-
   // Regular post
   if ([node[@"__typename"] isEqualToString:@"SubredditPost"]) {
     if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
       node[@"awardings"] = @[];
       node[@"isGildable"] = @NO;
     }
-
     if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores])
       node[@"isScoreHidden"] = @YES;
-
     if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW] &&
         [node[@"isNsfw"] boolValue])
       node[@"isHidden"] = @YES;
   }
+  // CellGroup handling
   if ([node[@"__typename"] isEqualToString:@"CellGroup"]) {
     for (NSMutableDictionary *cell in node[@"cells"]) {
       if ([cell[@"__typename"] isEqualToString:@"ActionCell"]) {
         if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
           cell[@"isAwardHidden"] = @YES;
-          cell[@"goldenUpvoteInfo"][@"isGildable"] = @NO;
+          // Fix: Check for NSNull before accessing nested dictionary
+          id goldenUpvoteInfo = cell[@"goldenUpvoteInfo"];
+          if ([goldenUpvoteInfo isKindOfClass:NSDictionary.class] && 
+              ![goldenUpvoteInfo isEqual:[NSNull null]]) {
+            cell[@"goldenUpvoteInfo"][@"isGildable"] = @NO;
+          }
         }
-
         if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores])
           cell[@"isScoreHidden"] = @YES;
       }
     }
+    // Check for ads in CellGroup
+    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted] &&
+        [node[@"adPayload"] isKindOfClass:NSDictionary.class]) {
+      node[@"cells"] = @[];
+    }
+    // Check for recommendations in CellGroup
+    if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended] &&
+        ![node[@"recommendationContext"] isEqual:[NSNull null]] &&
+        [node[@"recommendationContext"] isKindOfClass:NSDictionary.class]) {
+      NSDictionary *recommendationContext = node[@"recommendationContext"];
+      id typeName = recommendationContext[@"typeName"];
+      id isContextHidden = recommendationContext[@"isContextHidden"];
+      if (![typeName isEqual:[NSNull null]] &&
+          ![isContextHidden isEqual:[NSNull null]] &&
+          [typeName isKindOfClass:NSString.class] &&
+          [isContextHidden isKindOfClass:NSNumber.class]) {
+        if (!([typeName isEqualToString:@"PopularRecommendationContext"] &&
+              [isContextHidden boolValue])) {
+          node[@"cells"] = @[];
+        }
+      }
+    }
   }
-
   // Ad post
   if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted]) {
-    if ([node[@"__typename"] isEqualToString:@"AdPost"]) node[@"isHidden"] = @YES;
-    if ([node[@"__typename"] isEqualToString:@"CellGroup"] &&
-        [node[@"adPayload"] isKindOfClass:NSDictionary.class])
-      node[@"cells"] = @[];
-  }
-
-  // Recommendation
-  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended]) {
-    if ([node[@"__typename"] isEqualToString:@"CellGroup"] &&
-        ![node[@"recommendationContext"] isEqual:[NSNull null]]) {
-        
-        id typeName = node[@"recommendationContext"][@"typeName"];
-        id isContextHidden = node[@"recommendationContext"][@"isContextHidden"];
-        
-        // Add null checks before using the values
-        if (![typeName isEqual:[NSNull null]] && 
-            ![isContextHidden isEqual:[NSNull null]]) {
-            
-            if (!([typeName isEqualToString:@"PopularRecommendationContext"] &&
-                  [isContextHidden boolValue])) {
-                node[@"cells"] = @[];
-            }
-        }
+    if ([node[@"__typename"] isEqualToString:@"AdPost"]) {
+      node[@"isHidden"] = @YES;
     }
-}
-
+  }
   // Comment
   if ([node[@"__typename"] isEqualToString:@"Comment"]) {
     if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards]) {
       node[@"awardings"] = @[];
       node[@"isGildable"] = @NO;
     }
-
     if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores])
       node[@"isScoreHidden"] = @YES;
-
     if ([node[@"authorInfo"] isKindOfClass:NSDictionary.class] &&
         [node[@"authorInfo"][@"id"] isEqualToString:@"t2_6l4z3"] &&
         [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAutoCollapseAutoMod])
