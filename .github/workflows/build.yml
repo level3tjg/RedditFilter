@@ -31,7 +31,7 @@ jobs:
           fi
           echo "id=$(cat control | grep "Package:" | cut -d' ' -f2)" >> $GITHUB_OUTPUT
           echo "version=$version" >> $GITHUB_OUTPUT
-      
+
       - name: Install dependencies
         run: |
           sudo apt update
@@ -111,6 +111,10 @@ jobs:
           IPA: ${{ github.workspace }}/App.ipa
           APP_VERSION: ${{ steps.ipa_info.outputs.version }}
 
+      - name: Hash release files
+        id: hash_files
+        run: echo "hashes=$(sha256sum packages/*)" >> $GITHUB_OUTPUT
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -124,3 +128,4 @@ jobs:
           draft: true
           files: packages/*
           tag_name: v${{ steps.ipa_info.outputs.version }}-${{ steps.package_info.outputs.version }}
+          body: ${{ steps.hash_files.outputs.hashes }}

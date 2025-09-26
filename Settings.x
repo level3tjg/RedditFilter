@@ -1,4 +1,5 @@
 #import <AppSettingsViewController.h>
+#import <UserDrawerViewController.h>
 #import "FeedFilterSettingsViewController.h"
 
 NSBundle *redditFilterBundle;
@@ -8,6 +9,10 @@ extern NSString *localizedString(NSString *key, NSString *table);
 
 @interface AppSettingsViewController ()
 @property(nonatomic, assign) NSInteger feedFilterSectionIndex;
+@end
+
+@interface UserDrawerViewController ()
+- (void)navigateToRedditFilterSettings;
 @end
 
 %hook NSURLSession
@@ -69,14 +74,10 @@ extern NSString *localizedString(NSString *key, NSString *table);
         imageScaledToSize:CGSizeMake(20, 20)];
     UIImage *accessoryIconImage =
         [iconWithName(@"icon_forward") imageScaledToSize:CGSizeMake(20, 20)];
-    ImageLabelTableViewCell *cell =
-        [self dequeueSettingsCellForTableView:tableView
-                                    indexPath:indexPath
-                                 leadingImage:iconImage
-                                         text:[redditFilterBundle
-                                                  localizedStringForKey:@"filter.settings.title"
-                                                                  value:@"Feed filter"
-                                                                  table:nil]];
+    ImageLabelTableViewCell *cell = [self dequeueSettingsCellForTableView:tableView
+                                                                indexPath:indexPath
+                                                             leadingImage:iconImage
+                                                                     text:@"RedditFilter"];
     [cell setCustomAccessoryImage:accessoryIconImage];
     return cell;
   }
@@ -91,6 +92,42 @@ extern NSString *localizedString(NSString *key, NSString *table);
                                initWithStyle:UITableViewStyleGrouped]
                   animated:YES];
     return;
+  }
+  %orig;
+}
+%end
+
+%hook UserDrawerViewController
+- (void)defineAvailableUserActions {
+  %orig;
+  [self.availableUserActions addObject:@1337];
+}
+- (UITableViewCell *)tableView:(UITableView *)tableView
+         cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+  if ([tableView isEqual:self.actionsTableView] &&
+      self.availableUserActions[indexPath.row].unsignedIntegerValue == 1337) {
+    UITableViewCell *cell =
+        [self.actionsTableView dequeueReusableCellWithIdentifier:@"UserDrawerActionTableViewCell"];
+    cell.textLabel.text = @"RedditFilter";
+    cell.imageView.image = [[iconWithName(@"icon_filter") ?: iconWithName(@"icon-filter-outline")
+        imageScaledToSize:CGSizeMake(20, 20)]
+        imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    return cell;
+  }
+  return %orig;
+}
+%new
+- (void)navigateToRedditFilterSettings {
+  [self dismissViewControllerAnimated:YES completion:nil];
+  FeedFilterSettingsViewController *filterSettingsViewController =
+      [(FeedFilterSettingsViewController *)[objc_getClass("FeedFilterSettingsViewController") alloc]
+          initWithStyle:UITableViewStyleGrouped];
+  [[self currentNavigationController] pushViewController:filterSettingsViewController animated:YES];
+}
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+  if ([tableView isEqual:self.actionsTableView] &&
+      self.availableUserActions[indexPath.row].unsignedIntegerValue == 1337) {
+    return [self navigateToRedditFilterSettings];
   }
   %orig;
 }

@@ -8,26 +8,28 @@
 #import <objc/runtime.h>
 #import "Preferences.h"
 
-static NSMutableArray *assetBundles;
+@interface CUICatalog : NSObject {
+  NSBundle *_bundle;
+}
+- (NSArray<NSString *> *)allImageNames;
+- (instancetype)initWithName:(NSString *)name fromBundle:(NSBundle *)bundle;
+- (instancetype)initWithName:(NSString *)name fromBundle:(NSBundle *)bundle error:(NSError **)error;
+@end
+
+static NSMutableArray<NSBundle *> *assetBundles;
+static NSMutableArray<CUICatalog *> *assetCatalogs;
 
 extern "C" UIImage *iconWithName(NSString *iconName) {
-  NSArray *commonIconSizes = @[
-    @"24",
-    @"20",
-    @"16",
-  ];
-  UIImage *iconImage;
-  for (NSBundle *bundle in assetBundles) {
-    for (NSString *iconSize in commonIconSizes) {
-      if (iconImage) break;
-      iconImage = [UIImage imageNamed:[NSString stringWithFormat:@"%@_%@", iconName, iconSize]
-                               inBundle:bundle
-          compatibleWithTraitCollection:nil];
-    }
-    if (!iconImage)
-      iconImage = [UIImage imageNamed:iconName inBundle:bundle compatibleWithTraitCollection:nil];
-  }
-  return iconImage;
+  for (CUICatalog *catalog in assetCatalogs)
+    for (NSString *imageName in [catalog allImageNames])
+      if ([imageName hasPrefix:iconName] &&
+          (imageName.length == iconName.length || imageName.length == iconName.length + 3))
+        return [UIImage imageNamed:imageName
+                                 inBundle:object_getIvar(catalog,
+                                                         class_getInstanceVariable(
+                                                             object_getClass(catalog), "_bundle"))
+            compatibleWithTraitCollection:nil];
+  return nil;
 }
 
 extern "C" NSString *localizedString(NSString *key, NSString *table) {
@@ -63,13 +65,10 @@ static BOOL shouldFilterObject(id object) {
                   ([object respondsToSelector:@selector(isPromotedCommunityPostAd)] &&
                    [(Post *)object isPromotedCommunityPostAd]);
   BOOL isRecommendation = [className containsString:@"Recommend"];
-  BOOL isLivestream = [className containsString:@"Stream"];
   BOOL isNSFW = [object respondsToSelector:@selector(isNSFW)] && ((Post *)object).isNSFW;
   if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted] && isAdPost)
     return YES;
   if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended] && isRecommendation)
-    return YES;
-  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams] && isLivestream)
     return YES;
   if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW] && isNSFW) return YES;
   return NO;
@@ -232,23 +231,6 @@ static void filterNode(NSMutableDictionary *node) {
 }
 %end
 
-%hook StreamManager
-- (instancetype)initWithAccountContext:(id)accountContext
-                                source:(NSInteger)source
-                 deeplinkSubredditName:(id)deeplinkSubredditName
-                       streamingConfig:(id)streamingConfig {
-  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams]) return nil;
-  return %orig;
-}
-- (instancetype)initWithService:(id)service
-                         source:(NSInteger)source
-          deeplinkSubredditName:(id)deeplinkSubredditName
-                streamingConfig:(id)streamingConfig {
-  if ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams]) return nil;
-  return %orig;
-}
-%end
-
 %hook Carousel
 - (BOOL)isHiddenByUserWithAccountSettings:(id)accountSettings {
   return ([NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended] &&
@@ -358,7 +340,8 @@ static void filterNode(NSMutableDictionary *node) {
 %end
 
 %ctor {
-  assetBundles = [NSMutableArray new];
+  assetBundles = [NSMutableArray array];
+  assetCatalogs = [NSMutableArray array];
   [assetBundles addObject:NSBundle.mainBundle];
   for (NSString *file in
        [NSFileManager.defaultManager contentsOfDirectoryAtPath:NSBundle.mainBundle.bundlePath
@@ -380,9 +363,28 @@ static void filterNode(NSMutableDictionary *node) {
                                                 inDirectory:@"Frameworks"]];
     if (bundle) [assetBundles addObject:bundle];
   }
+  for (NSBundle *bundle in assetBundles) {
+    NSError *error;
+    CUICatalog *catalog = [[%c(CUICatalog) alloc] initWithName:@"Assets"
+                                                               fromBundle:bundle
+                                                                    error:&error];
+    if (!error) [assetCatalogs addObject:catalog];
+  }
+  NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
+  if (![defaults objectForKey:kRedditFilterPromoted])
+    [defaults setBool:true forKey:kRedditFilterPromoted];
+  if (![defaults objectForKey:kRedditFilterPromoted])
+    [defaults setBool:false forKey:kRedditFilterRecommended];
+  if (![defaults objectForKey:kRedditFilterPromoted])
+    [defaults setBool:false forKey:kRedditFilterNSFW];
+  if (![defaults objectForKey:kRedditFilterPromoted])
+    [defaults setBool:false forKey:kRedditFilterAwards];
+  if (![defaults objectForKey:kRedditFilterPromoted])
+    [defaults setBool:false forKey:kRedditFilterScores];
+  if (![defaults objectForKey:kRedditFilterPromoted])
+    [defaults setBool:false forKey:kRedditFilterAutoCollapseAutoMod];
   %init;
   %init(Legacy, Comment = CoreClass(@"Comment"), Post = CoreClass(@"Post"),
                    QuickActionViewModel = CoreClass(@"QuickActionViewModel"),
-                   StreamManager = CoreClass(@"StreamManager"),
                    ToggleImageTableViewCell = CoreClass(@"ToggleImageTableViewCell"));
 }

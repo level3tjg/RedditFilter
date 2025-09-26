@@ -14,7 +14,7 @@ extern Class CoreClass(NSString *name);
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
   switch (section) {
     case 0:
-      return 7;
+      return 6;
     default:
       return 0;
   }
@@ -51,15 +51,6 @@ extern Class CoreClass(NSString *name);
                                forControlEvents:UIControlEventValueChanged];
           break;
         case 2:
-          mainLabelText = LOC(@"filter.settings.livestreams.title", @"Livestreams");
-          iconNames = @[ @"icon_videocamera", @"icon_video_camera" ];
-          toggleCell.accessorySwitch.on =
-              ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterLivestreams];
-          [toggleCell.accessorySwitch addTarget:self
-                                         action:@selector(didToggleLivestreamsSwitch:)
-                               forControlEvents:UIControlEventValueChanged];
-          break;
-        case 3:
           mainLabelText = LOC(@"filter.settings.nsfw.title", @"NSFW");
           iconNames = @[ @"icon_nsfw_outline", @"icon_nsfw" ];
           toggleCell.accessorySwitch.on =
@@ -68,7 +59,7 @@ extern Class CoreClass(NSString *name);
                                          action:@selector(didToggleNsfwSwitch:)
                                forControlEvents:UIControlEventValueChanged];
           break;
-        case 4:
+        case 3:
           mainLabelText = LOC(@"filter.settings.awards.title", @"Awards");
           detailLabelText =
               LOC(@"filter.settings.awards.subtitle", @"Show awards on posts and comments");
@@ -79,7 +70,7 @@ extern Class CoreClass(NSString *name);
                                          action:@selector(didToggleAwardsSwitch:)
                                forControlEvents:UIControlEventValueChanged];
           break;
-        case 5:
+        case 4:
           mainLabelText = LOC(@"filter.settings.scores.title", @"Scores");
           detailLabelText =
               LOC(@"filter.settings.scores.subtitle", @"Show vote count on posts and comments");
@@ -90,7 +81,7 @@ extern Class CoreClass(NSString *name);
                                          action:@selector(didToggleScoresSwitch:)
                                forControlEvents:UIControlEventValueChanged];
           break;
-        case 6:
+        case 5:
           mainLabelText = LOC(@"filter.settings.automod.title", @"AutoMod");
           detailLabelText =
               LOC(@"filter.settings.automod.subtitle", @"Auto collapse AutoMod comments");
@@ -190,7 +181,7 @@ extern Class CoreClass(NSString *name);
 }
 - (void)viewDidLoad {
   %orig;
-  self.title = LOC(@"filter.settings.title", @"Feed filter");
+  self.title = @"RedditFilter";
   [self.tableView registerClass:CoreClass(@"ToggleImageTableViewCell")
          forCellReuseIdentifier:kToggleCellID];
   [self.tableView registerClass:CoreClass(@"ImageLabelTableViewCell")
@@ -203,10 +194,6 @@ extern Class CoreClass(NSString *name);
 %new
 - (void)didToggleRecommendedSwitch:(UISwitch *)sender {
   [NSUserDefaults.standardUserDefaults setBool:!sender.on forKey:kRedditFilterRecommended];
-}
-%new
-- (void)didToggleLivestreamsSwitch:(UISwitch *)sender {
-  [NSUserDefaults.standardUserDefaults setBool:!sender.on forKey:kRedditFilterLivestreams];
 }
 %new
 - (void)didToggleNsfwSwitch:(UISwitch *)sender {
