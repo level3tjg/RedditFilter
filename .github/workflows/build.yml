@@ -113,7 +113,10 @@ jobs:
 
       - name: Hash release files
         id: hash_files
-        run: echo "hashes=$(sha256sum packages/*)" >> $GITHUB_OUTPUT
+        run: |
+          echo 'hashes<<EOF' >> $GITHUB_OUTPUT
+          echo "$(sha256sum packages/*)" >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
