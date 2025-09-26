@@ -357,11 +357,23 @@ static void filterNode(NSMutableDictionary *node) {
                                          stringByAppendingPathComponent:@"Frameworks"]
                                error:nil]) {
     if (![file hasSuffix:@"framework"]) continue;
-    NSBundle *bundle = [NSBundle
-        bundleWithPath:[NSBundle.mainBundle pathForResource:[file stringByDeletingPathExtension]
-                                                     ofType:@"framework"
-                                                inDirectory:@"Frameworks"]];
+
+    NSString *frameworkPath =
+        [NSBundle.mainBundle pathForResource:[file stringByDeletingPathExtension]
+                                      ofType:@"framework"
+                                 inDirectory:@"Frameworks"];
+    NSBundle *bundle = [NSBundle bundleWithPath:frameworkPath];
     if (bundle) [assetBundles addObject:bundle];
+
+    for (NSString *file in [NSFileManager.defaultManager contentsOfDirectoryAtPath:frameworkPath
+                                                                             error:nil]) {
+      if (![file hasSuffix:@"bundle"]) continue;
+
+      NSBundle *bundle =
+          [NSBundle bundleWithPath:[frameworkPath stringByAppendingPathComponent:file]];
+
+      if (bundle) [assetBundles addObject:bundle];
+    }
   }
   for (NSBundle *bundle in assetBundles) {
     NSError *error;
