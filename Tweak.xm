@@ -103,7 +103,7 @@ static void filterNode(NSMutableDictionary *node) {
           cell[@"isAwardHidden"] = @YES;
           // Fix: Check for NSNull before accessing nested dictionary
           id goldenUpvoteInfo = cell[@"goldenUpvoteInfo"];
-          if ([goldenUpvoteInfo isKindOfClass:NSDictionary.class] && 
+          if ([goldenUpvoteInfo isKindOfClass:NSDictionary.class] &&
               ![goldenUpvoteInfo isEqual:[NSNull null]]) {
             cell[@"goldenUpvoteInfo"][@"isGildable"] = @NO;
           }
@@ -123,12 +123,15 @@ static void filterNode(NSMutableDictionary *node) {
         [node[@"recommendationContext"] isKindOfClass:NSDictionary.class]) {
       NSDictionary *recommendationContext = node[@"recommendationContext"];
       id typeName = recommendationContext[@"typeName"];
+      id typeIdentifier = recommendationContext[@"typeIdentifier"];
       id isContextHidden = recommendationContext[@"isContextHidden"];
-      if (![typeName isEqual:[NSNull null]] &&
+      if (![typeIdentifier isEqual:[NSNull null]] && ![typeName isEqual:[NSNull null]] &&
           ![isContextHidden isEqual:[NSNull null]] &&
+          [typeIdentifier isKindOfClass:NSString.class] &&
           [typeName isKindOfClass:NSString.class] &&
           [isContextHidden isKindOfClass:NSNumber.class]) {
-        if (!([typeName isEqualToString:@"PopularRecommendationContext"] &&
+        if (!(([typeName isEqualToString:@"PopularRecommendationContext"] ||
+               [typeIdentifier isEqualToString:@"global_popular_posts"]) &&
               [isContextHidden boolValue])) {
           node[@"cells"] = @[];
         }
