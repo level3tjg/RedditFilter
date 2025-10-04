@@ -34,7 +34,7 @@ extern Class CoreClass(NSString *name);
       switch (indexPath.row) {
         case 0:
           mainLabelText = LOC(@"filter.settings.promoted.title", @"Promoted");
-          iconNames = @[ @"icon_tag" ];
+          iconNames = @[ @"rpl3/tag", @"icon_tag" ];
           toggleCell.accessorySwitch.on =
               ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterPromoted];
           [toggleCell.accessorySwitch addTarget:self
@@ -43,7 +43,7 @@ extern Class CoreClass(NSString *name);
           break;
         case 1:
           mainLabelText = LOC(@"filter.settings.recommended.title", @"Recommended");
-          iconNames = @[ @"icon_spam" ];
+          iconNames = @[ @"rpl3/spam", @"icon_spam" ];
           toggleCell.accessorySwitch.on =
               ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterRecommended];
           [toggleCell.accessorySwitch addTarget:self
@@ -52,7 +52,7 @@ extern Class CoreClass(NSString *name);
           break;
         case 2:
           mainLabelText = LOC(@"filter.settings.nsfw.title", @"NSFW");
-          iconNames = @[ @"icon_nsfw_outline", @"icon_nsfw" ];
+          iconNames = @[ @"rpl3/nsfw", @"icon_nsfw_outline", @"icon_nsfw" ];
           toggleCell.accessorySwitch.on =
               ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterNSFW];
           [toggleCell.accessorySwitch addTarget:self
@@ -63,7 +63,7 @@ extern Class CoreClass(NSString *name);
           mainLabelText = LOC(@"filter.settings.awards.title", @"Awards");
           detailLabelText =
               LOC(@"filter.settings.awards.subtitle", @"Show awards on posts and comments");
-          iconNames = @[ @"icon_gift_fill", @"icon_award", @"icon-award-outline" ];
+          iconNames = @[ @"rpl3/award",  @"icon_gift_fill", @"icon_award", @"icon-award-outline" ];
           toggleCell.accessorySwitch.on =
               ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAwards];
           [toggleCell.accessorySwitch addTarget:self
@@ -74,7 +74,7 @@ extern Class CoreClass(NSString *name);
           mainLabelText = LOC(@"filter.settings.scores.title", @"Scores");
           detailLabelText =
               LOC(@"filter.settings.scores.subtitle", @"Show vote count on posts and comments");
-          iconNames = @[ @"icon_upvote" ];
+          iconNames = @[ @"rpl3/upvote", @"icon_upvote" ];
           toggleCell.accessorySwitch.on =
               ![NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterScores];
           [toggleCell.accessorySwitch addTarget:self
@@ -85,7 +85,7 @@ extern Class CoreClass(NSString *name);
           mainLabelText = LOC(@"filter.settings.automod.title", @"AutoMod");
           detailLabelText =
               LOC(@"filter.settings.automod.subtitle", @"Auto collapse AutoMod comments");
-          iconNames = @[ @"icon_mod" ];
+          iconNames = @[ @"rpl3/mod", @"icon_mod" ];
           toggleCell.accessorySwitch.on =
               [NSUserDefaults.standardUserDefaults boolForKey:kRedditFilterAutoCollapseAutoMod];
           [toggleCell.accessorySwitch addTarget:self

@@ -81,7 +81,7 @@ extern NSString *localizedString(NSString *key, NSString *table);
     UITableViewCell *cell =
         [self.actionsTableView dequeueReusableCellWithIdentifier:@"UserDrawerActionTableViewCell"];
     cell.textLabel.text = @"RedditFilter";
-    cell.imageView.image = [[iconWithName(@"icon_filter") ?: iconWithName(@"icon-filter-outline")
+    cell.imageView.image = [[iconWithName(@"rpl3/filter") ?: iconWithName(@"icon_filter") ?: iconWithName(@"icon-filter-outline")
         imageScaledToSize:CGSizeMake(20, 20)]
         imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
     return cell;
