@@ -131,7 +131,7 @@ static void filterNode(NSMutableDictionary *node) {
           [typeName isKindOfClass:NSString.class] &&
           [isContextHidden isKindOfClass:NSNumber.class]) {
         if (!(([typeName isEqualToString:@"PopularRecommendationContext"] ||
-               [typeIdentifier isEqualToString:@"global_popular_posts"]) &&
+               [typeIdentifier hasPrefix:@"global_popular"]) &&
               [isContextHidden boolValue])) {
           node[@"cells"] = @[];
         }
